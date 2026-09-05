@@ -61,33 +61,47 @@ h2 {
   position: sticky;
   top: 0;
   z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin: -2rem -1.25rem 1.5rem;
-  padding: .55rem 1.25rem;
-  color: #fff;
-  font-size: .85rem;
-  font-weight: 600;
-  letter-spacing: .06em;
+  padding: 1.4rem 1.25rem;
+  min-height: 5.4rem;
+  border-bottom: 6px solid rgba(0, 0, 0, .45);
+  color: #000;
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: .1em;
+  text-align: center;
   text-transform: uppercase;
 }
 
+/* Deliberately outside any palette a designer would pick. These are not meant
+ * to look good; they are meant to be impossible to mistake for production and
+ * impossible to mistake for each other. */
 .envbar-dev {
-  background: #1f5fa9;
+  background: #00e5ff;
 }
 
 .envbar-stg {
-  background: #b06a00;
+  background: #ff6a00;
 }
 
 .envbar-rc {
-  background: #7a1fa2;
+  background: #b6ff00;
 }
 
 .envbar-local {
-  background: #444c55;
+  background: #ff00c8;
+  color: #fff;
 }
 
 .envbar-mismatch {
-  background: #a30000;
+  background: repeating-linear-gradient(
+    45deg, #ff0000, #ff0000 22px, #000 22px, #000 44px);
+  color: #fff;
+  text-shadow: 0 0 6px #000, 0 0 3px #000;
 }
 
 table {
