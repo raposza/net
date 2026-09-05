@@ -55,6 +55,41 @@ h2 {
   font-size: .9rem;
 }
 
+/* Environment banner. Non-production environments say so, on every page, at
+ * the top, before anything else is read. */
+.envbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  margin: -2rem -1.25rem 1.5rem;
+  padding: .55rem 1.25rem;
+  color: #fff;
+  font-size: .85rem;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.envbar-dev {
+  background: #1f5fa9;
+}
+
+.envbar-stg {
+  background: #b06a00;
+}
+
+.envbar-rc {
+  background: #7a1fa2;
+}
+
+.envbar-local {
+  background: #444c55;
+}
+
+.envbar-mismatch {
+  background: #a30000;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;

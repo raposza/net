@@ -62,6 +62,18 @@ public final class Config {
     }
 
 
+    /**
+     * Which environment this instance is. Reported by the status endpoint so a
+     * consumer that has reached the wrong host can tell, and so the web page can
+     * check the name against the one it inferred from the hostname.
+     *
+     * @return the environment name; "local" when nothing set it
+     */
+    public static String environment() {
+        return env("FEED_ENVIRONMENT", "local");
+    }
+
+
     /** @return seconds between publications made by the worker */
     public static int publishIntervalSeconds() {
         return Integer.parseInt(env("FEED_PUBLISH_INTERVAL_SECONDS", "60"));

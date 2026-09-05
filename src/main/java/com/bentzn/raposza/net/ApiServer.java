@@ -67,6 +67,7 @@ public final class ApiServer {
         String stampCreated = String.valueOf(mapMeta.get("createdAt"));
         ctx.json(Dataset.map(
                 "service", "raposza-network-feed",
+                "environment", Config.environment(),
                 "buildId", Config.buildId(),
                 "content", mapMeta.get("content"),
                 "publicationId", mapMeta.get("publicationId"),

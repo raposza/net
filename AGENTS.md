@@ -49,6 +49,9 @@ from a configuration file.
 FEED_HTTP_PORT                  api port, default 30000
 FEED_HTTP_HOST                  bind address, default 0.0.0.0; set to
                                 127.0.0.1 behind a reverse proxy
+FEED_ENVIRONMENT                environment name reported by /api/v1/status,
+                                default local; anything but prd makes the web
+                                page show a banner
 FEED_BUILD_ID                   reported by /api/v1/status, default unknown
 FEED_DATASET_DIR                published dataset, default ./dataset
 FEED_STATIC_DIR                 when set, the api also serves the web assets

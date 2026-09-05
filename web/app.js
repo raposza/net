@@ -15,6 +15,45 @@ async function get(path) {
   return res.json();
 }
 
+/* Which environment is this? The hostname answers instantly, so the banner is
+ * on screen before any request completes -- it must not depend on an API that
+ * may be the thing that is broken. /api/v1/status is then the authority, and a
+ * disagreement between the two is itself worth shouting about. */
+const ENV_BY_HOST = {
+  "raposza.com": "prd",
+  "rc.raposza.com": "rc",
+  "stg.raposza.com": "stg",
+  "dev.raposza.com": "dev"
+};
+
+const ENV_LABEL = {
+  prd: "Production",
+  rc: "Release candidate",
+  stg: "Staging",
+  dev: "Development",
+  local: "Local"
+};
+
+function envFromHost() {
+  return ENV_BY_HOST[window.location.hostname] || "local";
+}
+
+function showEnvBar(name, note) {
+  const bar = document.getElementById("envbar");
+  if (name === "prd" && !note) {
+    bar.hidden = true;
+    return;
+  }
+  const label = ENV_LABEL[name] || name;
+  bar.className = "envbar envbar-" + (note ? "mismatch" : name);
+  bar.textContent = note
+    ? "Environment mismatch: " + note
+    : label + " \u2014 " + window.location.hostname + " \u2014 not production";
+  bar.hidden = false;
+  document.title = (name === "prd" ? "" : "[" + name.toUpperCase() + "] ") +
+    "Raposza Network Operations Feed";
+}
+
 function cell(text, cls) {
   const td = document.createElement("td");
   if (cls) {
@@ -78,6 +117,11 @@ function renderSources(data) {
 }
 
 function renderStatus(status) {
+  const claimed = status.environment;
+  const guessed = envFromHost();
+  if (claimed && claimed !== guessed) {
+    showEnvBar(guessed, window.location.hostname + " is serving the " + claimed + " environment");
+  }
   document.getElementById("status").textContent =
     "publication " + status.publicationId +
     ", " + status.publicationAgeSeconds + " s old" +
@@ -108,5 +152,6 @@ async function load() {
   }
 }
 
+showEnvBar(envFromHost());
 load();
 setInterval(load, 30000);
