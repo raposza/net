@@ -1,0 +1,122 @@
+/*
+ * Copyright 2026 bentzn
+ * SPDX-License-Identifier: Apache-2.0
+ * Author Claude/bentzn
+ */
+
+:root {
+  --ink: #10161c;
+  --paper: #f7f8f9;
+  --rule: #d3d9de;
+  --muted: #5b6874;
+  --accent: #7a3e1d;
+  --warn: #8a5a00;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0 auto;
+  padding: 2rem 1.25rem 4rem;
+  max-width: 60rem;
+  background: var(--paper);
+  color: var(--ink);
+  font: 16px/1.5 ui-sans-serif, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+h1 {
+  margin: 0 0 .25rem;
+  font-size: 1.6rem;
+  letter-spacing: -.01em;
+}
+
+h2 {
+  margin: 2.5rem 0 .75rem;
+  font-size: 1.05rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--muted);
+}
+
+.lead {
+  margin: 0;
+  max-width: 44rem;
+  color: var(--muted);
+}
+
+.banner {
+  margin: 1rem 0 0;
+  padding: .6rem .8rem;
+  border-left: 3px solid var(--warn);
+  background: #fff6e5;
+  color: var(--warn);
+  font-size: .9rem;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+th,
+td {
+  padding: .45rem .6rem;
+  border-bottom: 1px solid var(--rule);
+  text-align: left;
+  font-size: .92rem;
+}
+
+th {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: .78rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+td.mono,
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.tag {
+  display: inline-block;
+  padding: .05rem .4rem;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  background: #fff;
+  font-size: .75rem;
+  letter-spacing: .04em;
+}
+
+.tag-CONFIRMED {
+  border-color: #2f6b3a;
+  color: #2f6b3a;
+}
+
+.tag-TENTATIVE,
+.tag-PLANNED {
+  border-color: var(--warn);
+  color: var(--warn);
+}
+
+.tag-CONFLICTED,
+.tag-REQUIRES_REVIEW {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+footer {
+  margin-top: 3rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--rule);
+  color: var(--muted);
+  font-size: .85rem;
+}
+
+footer a {
+  color: var(--accent);
+}

@@ -1,0 +1,22 @@
+# Build output
+target/
+dist/
+node_modules/
+
+# IDE
+.idea/
+*.iml
+.settings/
+.classpath
+.project
+.vscode/
+nbproject/
+
+# Editor and OS
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# Local run output
+local/

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<!--
+  Copyright 2026 bentzn
+  SPDX-License-Identifier: Apache-2.0
+  Author Claude/bentzn
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Raposza Network Operations Feed</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <h1>Raposza Network Operations Feed</h1>
+  <p class="lead">What is deployed on the Canton Network, what is scheduled, whether it
+  is confirmed, and where every fact came from.</p>
+  <p id="banner" class="banner" hidden></p>
+</header>
+
+<section>
+  <h2>Networks</h2>
+  <table id="networks">
+    <thead>
+      <tr>
+        <th>Network</th>
+        <th>Splice</th>
+        <th>Minimum</th>
+        <th>Synchronizer</th>
+        <th>Serial</th>
+        <th>Next</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</section>
+
+<section>
+  <h2>Scheduled</h2>
+  <table id="events">
+    <thead>
+      <tr>
+        <th>Network</th>
+        <th>Type</th>
+        <th>Slot</th>
+        <th>Version</th>
+        <th>Status</th>
+        <th>Effective</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</section>
+
+<section>
+  <h2>Sources</h2>
+  <table id="sources">
+    <thead>
+      <tr>
+        <th>Source</th>
+        <th>Publisher</th>
+        <th>Authority</th>
+        <th>State</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</section>
+
+<footer>
+  <p id="status">Loading.</p>
+  <p>The page is a view of the API. It carries no fact the API does not.
+  <a href="/api/v1/status">/api/v1/status</a></p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
