@@ -35,6 +35,7 @@ public final class ApiServer {
     /** Binds the configured port and blocks. */
     public static void run() {
         int portHttp = Config.httpPort();
+        String nameHost = Config.httpHost();
         String dirStatic = Config.staticDir();
         Javalin.create(cfgApp -> {
             if (dirStatic != null) {
@@ -51,7 +52,7 @@ public final class ApiServer {
             cfgApp.routes.get("/api/v1/events", ApiServer::events);
             cfgApp.routes.get("/api/v1/events/{id}", ApiServer::event);
             cfgApp.routes.get("/api/v1/sources", ApiServer::sources);
-        }).start(portHttp);
+        }).start(nameHost, portHttp);
     }
 
 

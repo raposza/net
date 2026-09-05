@@ -25,6 +25,19 @@ public final class Config {
     }
 
 
+    /**
+     * Interface the api binds. The default accepts connections from anywhere,
+     * which is what a local run and a container both need. Behind a reverse
+     * proxy set it to 127.0.0.1 so the port cannot be reached from outside the
+     * machine even if the firewall is wrong.
+     *
+     * @return the bind address
+     */
+    public static String httpHost() {
+        return env("FEED_HTTP_HOST", "0.0.0.0");
+    }
+
+
     /** @return the identifier of the build being served, reported by the status endpoint */
     public static String buildId() {
         return env("FEED_BUILD_ID", "unknown");
