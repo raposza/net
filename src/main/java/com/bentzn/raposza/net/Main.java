@@ -5,7 +5,7 @@
 package com.bentzn.raposza.net;
 
 /**
- * Entry point. One jar, three roles: api, worker, replay.
+ * Entry point. One jar, five roles: api, worker, collect, replay, rebuild.
  *
  * Author Claude/bentzn
  */
@@ -28,13 +28,22 @@ public final class Main {
             case "worker":
                 Worker.run();
                 break;
+            case "collect":
+                if (Collect.once() > 0) {
+                    System.exit(1);
+                }
+                break;
             case "replay":
                 if (!Worker.publishOnce()) {
                     System.exit(1);
                 }
                 break;
+            case "rebuild":
+                Rebuild.force();
+                break;
             default:
-                System.err.println("usage: java -jar raposza-network-feed.jar <api|worker|replay>");
+                System.err.println(
+                        "usage: java -jar raposza-network-feed.jar <api|worker|collect|replay|rebuild>");
                 System.exit(2);
         }
     }

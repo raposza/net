@@ -19,6 +19,10 @@ import io.javalin.http.staticfiles.Location;
  * directory; when that directory is absent it serves a corpus generated at
  * startup, so the endpoints answer before anything has published.
  *
+ * It opens no database. The index is an embedded file with one writer, and the
+ * writer is the worker; keeping the api out of it is what lets the two run as
+ * separate services.
+ *
  * Author Claude/bentzn
  */
 public final class ApiServer {

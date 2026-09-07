@@ -1,0 +1,95 @@
+{
+  "comment": [
+    "Source definitions. Authority is policy: a source is promoted by a reviewed",
+    "change to this file, never by discovery. A source is pinned by its id; the",
+    "url is an attribute of it, so a move is a change recorded here and not a",
+    "content change inferred from a redirect.",
+    "transport git walks commits; transport http banks one body per poll.",
+    "branch null means the collector follows whatever the remote declares as its",
+    "default. pathPrefix null means the whole tree is tracked.",
+    "An http endpoint is only usable as evidence if its body is stable when",
+    "nothing has happened. Endpoints carrying counters - download counts, view",
+    "counts - change on every poll and bank an observation that says nothing.",
+    "Splice is tracked by TAGS for that reason, not by the releases endpoint."
+  ],
+  "sources": [
+    {
+      "id": "canton-foundation-configs",
+      "publisher": "Canton Foundation",
+      "transport": "git",
+      "url": "https://github.com/canton-foundation/configs.git",
+      "branch": null,
+      "pathPrefix": null,
+      "sourceAuthority": "OFFICIAL",
+      "claimPolicy": "network-configuration",
+      "pollSeconds": 300,
+      "includePreReleases": false,
+      "enabled": true
+    },
+    {
+      "id": "canton-foundation-configs-runtime",
+      "publisher": "Canton Foundation",
+      "transport": "git",
+      "url": "https://github.com/canton-foundation/configs-runtime.git",
+      "branch": null,
+      "pathPrefix": null,
+      "sourceAuthority": "OFFICIAL",
+      "claimPolicy": "network-runtime-configuration",
+      "pollSeconds": 300,
+      "includePreReleases": false,
+      "enabled": true
+    },
+    {
+      "id": "canton-foundation-cips",
+      "publisher": "Canton Foundation",
+      "transport": "git",
+      "url": "https://github.com/canton-foundation/cips.git",
+      "branch": null,
+      "pathPrefix": null,
+      "sourceAuthority": "GOVERNANCE",
+      "claimPolicy": "governance-decision",
+      "pollSeconds": 3600,
+      "includePreReleases": false,
+      "enabled": true
+    },
+    {
+      "id": "canton-foundation-sv-operations-schedule",
+      "publisher": "Canton Foundation",
+      "transport": "http",
+      "url": "https://sv-cal.canton.foundation/schedule.json",
+      "branch": null,
+      "pathPrefix": null,
+      "sourceAuthority": "OFFICIAL",
+      "claimPolicy": "network-operating-schedule",
+      "pollSeconds": 300,
+      "includePreReleases": false,
+      "enabled": true
+    },
+    {
+      "id": "canton-foundation-binaries",
+      "publisher": "Canton Foundation",
+      "transport": "git",
+      "url": "https://github.com/canton-foundation/binaries.git",
+      "branch": null,
+      "pathPrefix": null,
+      "sourceAuthority": "OFFICIAL",
+      "claimPolicy": "sv-binaries",
+      "pollSeconds": 900,
+      "includePreReleases": false,
+      "enabled": true
+    },
+    {
+      "id": "splice-tags",
+      "publisher": "Splice project",
+      "transport": "http",
+      "url": "https://api.github.com/repos/canton-network/splice/tags?per_page=100",
+      "branch": null,
+      "pathPrefix": null,
+      "sourceAuthority": "OFFICIAL_PROJECT",
+      "claimPolicy": "software-release-exists",
+      "pollSeconds": 900,
+      "includePreReleases": true,
+      "enabled": true
+    }
+  ]
+}

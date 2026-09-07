@@ -5,12 +5,22 @@
 package com.bentzn.raposza.net;
 
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 /**
- * The write side. Generates a corpus and publishes it into the dataset
- * directory, once for the replay role and on a fixed interval for the worker.
+ * The write side. On each turn it polls the sources whose interval has elapsed
+ * and then publishes: the worker interval is how often the schedule is looked
+ * at, and the source interval is how often that source is actually retrieved.
+ *
+ * Publication happens whether or not collection did, so a source that is down
+ * never stops the dataset being served.
+ *
+ * Only the environment that owns the record acquires. Elsewhere the worker
+ * publishes and polls nothing, so the test environments exercise the publication
+ * path without competing for the sources or splitting the observed history.
  *
  * Author Claude/bentzn
  */
@@ -27,9 +37,39 @@ public final class Worker {
      */
     public static void run() throws InterruptedException {
         int secInterval = Config.publishIntervalSeconds();
+        boolean isCollecting = Config.collectEnabled();
+        System.out.println("worker " + Config.environment() + ": "
+                + (isCollecting ? "acquiring and publishing" : "publishing only, not acquiring"));
+        openIndex();
         while (true) {
+            if (isCollecting) {
+                Collect.due();
+            }
             publishOnce();
             TimeUnit.SECONDS.sleep(secInterval);
+        }
+    }
+
+
+    /**
+     * Brings the index into existence and, when it holds nothing, rebuilds it
+     * from the evidence store and the journal. A deleted database file is
+     * therefore a recoverable state and not a loss.
+     */
+    static void openIndex() {
+        try (Connection conn = Db.connection()) {
+            Db.schema(conn);
+            if (!Db.isEmpty(conn)) {
+                return;
+            }
+            Rebuild.Result res = Rebuild.run(conn, Config.evidenceDir(), Config.journalDir(), Sources.load());
+            if (res.cntAttempt() > 0 || res.cntMissing() > 0) {
+                System.out.println("rebuilt index from journal: " + res.cntAttempt() + " attempts, "
+                        + res.cntObservation() + " observations, " + res.cntMissing() + " bodies missing");
+            }
+        }
+        catch (SQLException | IOException e) {
+            System.err.println("index unavailable: " + e);
         }
     }
 
