@@ -14,6 +14,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -98,9 +99,46 @@ public final class Sources {
 
 
     /**
+     * The source list as it is published: the definitions this build carries,
+     * each with the state the index holds for it. The registry decides which
+     * sources exist, so a source that was renamed or withdrawn disappears from
+     * the published list on the build that renames it.
+     *
+     * @param conn an open connection
+     * @param lstDef the definitions
+     * @return one map per definition, in file order
+     * @throws SQLException when the read fails
+     */
+    public static List<Object> published(Connection conn, List<SourceDef> lstDef) throws SQLException {
+        Map<String, Object[]> mapLive = new LinkedHashMap<>();
+        try (PreparedStatement stmt = conn.prepareStatement("select id, state, last_success_at from source")) {
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    mapLive.put(rs.getString(1),
+                            new Object[] {rs.getString(2), rs.getObject(3, OffsetDateTime.class)});
+                }
+            }
+        }
+        List<Object> lstOut = new ArrayList<>();
+        for (SourceDef def : lstDef) {
+            Object[] arrLive = mapLive.get(def.id());
+            OffsetDateTime stampLast = arrLive == null ? null : (OffsetDateTime) arrLive[1];
+            lstOut.add(Dataset.map(
+                    "id", def.id(),
+                    "publisher", def.publisher(),
+                    "authority", def.sourceAuthority(),
+                    "enabled", Boolean.valueOf(def.enabled()),
+                    "state", arrLive == null ? "UNKNOWN" : arrLive[0],
+                    "lastSuccessAt", stampLast == null ? null : Dataset.iso(stampLast.toInstant())));
+        }
+        return lstOut;
+    }
+
+
+    /**
      * @param conn an open connection
      * @param idSource the source
-     * @return the newest revision already banked, or null when none is
+     * @return the newest revision already banked, or null when there is none
      * @throws SQLException when the read fails
      */
     public static String lastRevision(Connection conn, String idSource) throws SQLException {

@@ -17,7 +17,7 @@ trap 'if [ -n "$pidApi" ]; then kill "$pidApi" 2>/dev/null || true; fi; rm -rf "
 port=$(( 31000 + (RANDOM % 900) ))
 fail=0
 
-FEED_DATASET_DIR="$work/dataset" java -jar "$jar" replay
+FEED_DATASET_DIR="$work/dataset" FEED_DB_DIR="$work/db" java -jar "$jar" replay
 
 FEED_HTTP_PORT="$port" \
 FEED_DATASET_DIR="$work/dataset" \
@@ -51,8 +51,18 @@ chk networks /api/v1/networks                     '"MAINNET"'
 chk mainnet  /api/v1/networks/mainnet             '"currentVersion"'
 chk events   /api/v1/events                       'NETWORK_UPGRADE_PLANNED'
 chk event    /api/v1/events/evt_mainnet_2026w39   '"WEEKLY_UPGRADE"'
-chk sources  /api/v1/sources                      '"authority"'
+chk sources  /api/v1/sources                      'canton-foundation-cips'
 chk webpage  /index.html                          'Raposza'
+
+# The published source list is the registry this build carries. A source id that
+# is not in sources.json must not appear, however plausible it looks.
+if curl -sf "http://127.0.0.1:$port/api/v1/sources" -o "$work/sources.json" \
+    && ! grep -q 'splice-github-releases' "$work/sources.json"; then
+  echo "ok   sources carry no id the registry does not define"
+else
+  echo "FAIL /api/v1/sources names a source that does not exist"
+  fail=1
+fi
 
 curl -sf -D "$work/apihead" "http://127.0.0.1:$port/api/v1/status" -o /dev/null || true
 if grep -qi '^x-raposza-publication:' "$work/apihead"; then

@@ -26,9 +26,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * The published dataset: generation of a corpus, atomic write of the directory a
  * static server exposes, and read-back of that directory.
  *
- * The content is placeholder content. It carries the shape of the contract, not
- * observed facts: no collector has run, no source has been read, and every value
- * here was written by hand.
+ * The networks and the events are placeholder content: they carry the shape of
+ * the contract and not observed facts, and every value in them was written by
+ * hand. The source list is not placeholder. It is the registry the collector
+ * actually runs on, with the state the index holds for each entry, so a reader
+ * is never told about a source this build does not have.
  *
  * Author Claude/bentzn
  */
@@ -61,9 +63,11 @@ public final class Dataset {
     /**
      * @param idPublication identifier stamped into every record
      * @param instNow the moment of publication
+     * @param lstSource the source list as the index holds it, or null to fall back
+     *        to the registry this build carries
      * @return the whole corpus: metadata, networks, events, sources
      */
-    public static Map<String, Object> generate(String idPublication, Instant instNow) {
+    public static Map<String, Object> generate(String idPublication, Instant instNow, List<Object> lstSource) {
         String stampNow = FMT_ISO.format(instNow);
         Map<String, Object> mapDs = new LinkedHashMap<>();
         mapDs.put("metadata", map(
@@ -73,8 +77,17 @@ public final class Dataset {
                 "content", "PLACEHOLDER"));
         mapDs.put("networks", networks(idPublication, stampNow));
         mapDs.put("events", events(stampNow));
-        mapDs.put("sources", sources(stampNow));
+        mapDs.put("sources", lstSource == null ? registry() : lstSource);
         return mapDs;
+    }
+
+
+    /**
+     * @param instMoment a moment, or null
+     * @return it in the second-precision UTC form every timestamp here uses
+     */
+    public static String iso(Instant instMoment) {
+        return instMoment == null ? null : FMT_ISO.format(instMoment);
     }
 
 
@@ -245,26 +258,28 @@ public final class Dataset {
     }
 
 
-    private static List<Object> sources(String stampNow) {
+    /**
+     * The source list as the registry alone describes it, used when no index is
+     * open: the api falls back to this before the first publication exists, and
+     * it must never invent a source or a state it has not read.
+     */
+    private static List<Object> registry() {
         List<Object> lstOut = new ArrayList<>();
-        lstOut.add(source("canton-foundation-sv-operations-schedule", "Canton Foundation", "OFFICIAL", stampNow));
-        lstOut.add(source("canton-foundation-network-status", "Canton Foundation", "OFFICIAL", stampNow));
-        lstOut.add(source("splice-github-releases", "Splice project", "OFFICIAL_PROJECT", stampNow));
-        lstOut.add(source("splice-release-notes", "Splice project", "OFFICIAL_PROJECT", stampNow));
-        lstOut.add(source("network-documentation", "Digital Asset", "OFFICIAL_PROJECT", stampNow));
+        try {
+            for (SourceDef def : Sources.load()) {
+                lstOut.add(map(
+                        "id", def.id(),
+                        "publisher", def.publisher(),
+                        "authority", def.sourceAuthority(),
+                        "enabled", Boolean.valueOf(def.enabled()),
+                        "state", "UNKNOWN",
+                        "lastSuccessAt", null));
+            }
+        }
+        catch (IOException e) {
+            System.err.println("source registry unavailable: " + e);
+        }
         return lstOut;
-    }
-
-
-    private static Map<String, Object> source(String idSource, String namePublisher,
-            String nameAuthority, String stampNow) {
-        return map(
-                "id", idSource,
-                "publisher", namePublisher,
-                "authority", nameAuthority,
-                "enabled", Boolean.FALSE,
-                "state", "NOT_COLLECTING",
-                "lastSuccessAt", stampNow);
     }
 
 

@@ -126,7 +126,7 @@ public final class ApiServer {
         if (mapDs != null) {
             return mapDs;
         }
-        return Dataset.generate(ID_FALLBACK, INST_START);
+        return Dataset.generate(ID_FALLBACK, INST_START, null);
     }
 
 

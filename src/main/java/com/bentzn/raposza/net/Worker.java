@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Instant;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -83,7 +84,7 @@ public final class Worker {
         Instant instNow = Instant.now();
         String idPublication = Dataset.newPublicationId(instNow);
         try {
-            Dataset.write(Config.datasetDir(), Dataset.generate(idPublication, instNow));
+            Dataset.write(Config.datasetDir(), Dataset.generate(idPublication, instNow, sourceList()));
             System.out.println("published " + idPublication + " to "
                     + Config.datasetDir().toAbsolutePath().normalize());
             return true;
@@ -91,6 +92,22 @@ public final class Worker {
         catch (IOException e) {
             System.err.println("publication failed: " + e);
             return false;
+        }
+    }
+
+
+    /**
+     * @return the registry with the state the index holds for each source, or
+     *         null when the index cannot be read, which publishes the registry
+     *         alone rather than a stale list
+     */
+    private static List<Object> sourceList() {
+        try (Connection conn = Db.connection()) {
+            return Sources.published(conn, Sources.load());
+        }
+        catch (SQLException | IOException e) {
+            System.err.println("source state unavailable, publishing the registry alone: " + e);
+            return null;
         }
     }
 }
