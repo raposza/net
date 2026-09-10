@@ -88,10 +88,11 @@ create table if not exists claim (
     subject_network     varchar(50),
     subject_kind        varchar(100) not null,
     subject_period      varchar(50),
+    subject_ref         varchar(64),
     field               varchar(100) not null,
-    claim_value         varchar(1000),
+    claim_value         varchar(20000),
     value_precision     varchar(30),
-    raw                 varchar(2000),
+    raw                 varchar(20000),
     source_authority    varchar(50)  not null,
     confidence          varchar(30)  not null,
     created_at          timestamp with time zone not null default current_timestamp,
@@ -104,3 +105,28 @@ create index if not exists claim_observation_ix
 
 create index if not exists claim_subject_ix
     on claim (subject_network, subject_kind, subject_period);
+
+create index if not exists claim_subject_ref_ix
+    on claim (subject_ref);
+
+-- One row per observation per normalizer version: whether the body was read
+-- into claims or refused, and how many claims it gave. A refused body is
+-- recorded so it is not read again on every turn; a new normalizer version reads
+-- every body again.
+create table if not exists normalization (
+    observation_id      varchar(64)  not null references source_observation (id),
+    normalizer          varchar(100) not null,
+    outcome             varchar(30)  not null,
+    claim_count         integer      not null,
+    detail              varchar(500),
+    primary key (observation_id, normalizer),
+    constraint normalization_outcome_ck
+        check (outcome in ('NORMALIZED', 'REFUSED'))
+);
+
+-- The digest of the schema this index was built with. An index built with any
+-- other schema is dropped and rebuilt, never migrated.
+create table if not exists index_meta (
+    meta_key            varchar(100) primary key,
+    meta_value          varchar(200) not null
+);

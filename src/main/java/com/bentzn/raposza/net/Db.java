@@ -7,8 +7,11 @@ package com.bentzn.raposza.net;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -20,8 +23,10 @@ import java.util.List;
  *
  * It is a derived index, not a system of record. Everything in it can be
  * reconstructed from the evidence store and the poll journal, which is why there
- * are no migrations: a schema that has moved on is not migrated, the file is
- * deleted and the index is rebuilt.
+ * are no migrations: a schema that has moved on is not migrated, the index is
+ * dropped and rebuilt. The index records the digest of the schema it was built
+ * with, so a build carrying another schema recognises it and drops it rather
+ * than writing into tables of the wrong shape.
  *
  * Embedded H2 admits ONE writer process. The worker owns it. The api reads the
  * published dataset directory and opens no database at all, which is what makes
@@ -32,6 +37,8 @@ import java.util.List;
 public final class Db {
 
     private static final String RES_SCHEMA = "/schema.sql";
+
+    private static final String KEY_SCHEMA = "schema_sha256";
 
 
     private Db() {
@@ -48,17 +55,55 @@ public final class Db {
 
 
     /**
-     * Brings the schema into existence. Idempotent: every statement is guarded,
-     * so a second run changes nothing.
+     * Brings the schema into existence and records its digest. Idempotent: every
+     * statement is guarded, so a second run changes nothing. An index built with
+     * another schema is dropped first, so tables of the wrong shape are never
+     * marked current; the caller that sees true rebuilds.
      *
      * @param conn an open connection
+     * @return true when a stale index was dropped, leaving an empty one
      * @throws SQLException when a statement fails
      * @throws IOException when the schema resource is absent
      */
-    public static void schema(Connection conn) throws SQLException, IOException {
+    public static boolean schema(Connection conn) throws SQLException, IOException {
+        String sqlAll = read();
+        boolean isDropped = false;
+        if (isStale(conn)) {
+            drop(conn);
+            isDropped = true;
+        }
         try (Statement stmt = conn.createStatement()) {
-            for (String sqlOne : statements(read())) {
+            for (String sqlOne : statements(sqlAll)) {
                 stmt.execute(sqlOne);
+            }
+        }
+        try (PreparedStatement stmt = conn.prepareStatement(
+                "merge into index_meta (meta_key, meta_value) key (meta_key) values (?, ?)")) {
+            stmt.setString(1, KEY_SCHEMA);
+            stmt.setString(2, digest(sqlAll));
+            stmt.executeUpdate();
+        }
+        return isDropped;
+    }
+
+
+    /**
+     * @param conn an open connection
+     * @return true when the file holds an index built with a schema other than
+     *         the one this build carries, including one from before the digest
+     *         was recorded; false for an empty file
+     * @throws SQLException when the file cannot be read
+     * @throws IOException when the schema resource is absent
+     */
+    public static boolean isStale(Connection conn) throws SQLException, IOException {
+        if (!hasTable(conn, "POLL_ATTEMPT"))
+            return false;
+        if (!hasTable(conn, "INDEX_META"))
+            return true;
+        try (PreparedStatement stmt = conn.prepareStatement("select meta_value from index_meta where meta_key = ?")) {
+            stmt.setString(1, KEY_SCHEMA);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return !rs.next() || !digest(read()).equals(rs.getString(1));
             }
         }
     }
@@ -93,11 +138,43 @@ public final class Db {
     }
 
 
+    /**
+     * No table type is passed: H2 does not report its tables under the type name
+     * other databases use, and a filter on it would find nothing and call every
+     * index current.
+     */
+    private static boolean hasTable(Connection conn, String nameTable) throws SQLException {
+        try (ResultSet rs = conn.getMetaData().getTables(null, null, nameTable, null)) {
+            while (rs.next()) {
+                if (nameTable.equals(rs.getString("TABLE_NAME")))
+                    return true;
+            }
+            return false;
+        }
+    }
+
+
     private static String read() throws IOException {
         try (InputStream strmIn = Db.class.getResourceAsStream(RES_SCHEMA)) {
             if (strmIn == null)
                 throw new IOException("no " + RES_SCHEMA + " in the artifact");
             return new String(strmIn.readAllBytes(), StandardCharsets.UTF_8);
+        }
+    }
+
+
+    private static String digest(String textIn) {
+        try {
+            byte[] bytesDigest = MessageDigest.getInstance("SHA-256").digest(textIn.getBytes(StandardCharsets.UTF_8));
+            StringBuilder sbHex = new StringBuilder(bytesDigest.length * 2);
+            for (byte bDigest : bytesDigest) {
+                sbHex.append(Character.forDigit((bDigest >> 4) & 0xF, 16));
+                sbHex.append(Character.forDigit(bDigest & 0xF, 16));
+            }
+            return sbHex.toString();
+        }
+        catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 is not available", e);
         }
     }
 

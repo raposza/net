@@ -18,8 +18,9 @@ import java.util.List;
  *
  * This runs by itself whenever the worker starts against an empty index, which
  * is what makes deleting the database file a safe operation rather than a loss.
- * Nothing here reaches the network and nothing here interprets a body: a rebuild
- * indexes evidence, it does not read it.
+ * Nothing here reaches the network and run interprets no body: a rebuild indexes
+ * evidence, it does not read it. The claims are read afterwards by Normalize, a
+ * separate pass over the same evidence.
  *
  * Author Claude/bentzn
  */
@@ -87,9 +88,9 @@ public final class Rebuild {
 
 
     /**
-     * Throws the index away and replays it. This is the same work the worker does
-     * on its own against an empty index; the role exists for the case where the
-     * index is present but wrong.
+     * Throws the index away, replays it, and reads the banked bodies into claims
+     * again. This is the same work the worker does on its own against an empty
+     * index; the role exists for the case where the index is present but wrong.
      */
     public static void force() {
         try (Connection conn = Db.connection()) {
@@ -98,6 +99,7 @@ public final class Rebuild {
             Result res = run(conn, Config.evidenceDir(), Config.journalDir(), Sources.load());
             System.out.println("rebuilt " + res.cntAttempt() + " attempts, " + res.cntObservation()
                     + " observations, " + res.cntMissing() + " bodies missing");
+            Normalize.report(Normalize.pending(conn, Config.evidenceDir()));
         }
         catch (SQLException | IOException e) {
             System.err.println("rebuild failed: " + e);

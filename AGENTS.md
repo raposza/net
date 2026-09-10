@@ -21,9 +21,13 @@ document a comment may cite.
   `coll`. No `mvn -q`.
 - No LLM output in the ingestion path. Parsers are deterministic.
 - The one thing that must never silently break: the fixture corpus under
-  `fixtures/` is real banked source snapshots, and `./test.sh` diffs every
-  normalizer's output over every fixture against the committed expectation.
-  An unexplained difference is a failure, not a warning.
+  `fixtures/<source id>/` is real banked source snapshots, each named by its
+  sha256 with the claims it must produce beside it as `<sha256>.claims.jsonl`,
+  and `./test.sh` diffs every normalizer's output over every fixture against
+  that committed expectation. An unexplained difference is a failure, not a
+  warning. Expectations are rewritten only for a deliberate new normalizer
+  version, with `FEED_FIXTURES_BLESS=1 mvn -B test`, and the difference is read
+  before it is committed.
 
 ## Build and test
 
@@ -41,9 +45,10 @@ installs nothing and writes nothing outside the project.
 One jar, five roles:
 `java -jar target/raposza-network-feed.jar <api|worker|collect|replay|rebuild>`.
 `api` serves the read endpoints, `worker` polls the sources whose interval has
-elapsed and then publishes, `collect` polls every enabled source once and exits,
-`replay` publishes once and exits, `rebuild` throws the index away and replays
-it from the evidence store and the journal.
+elapsed, reads what it banked into claims and then publishes, `collect` polls
+every enabled source once and exits, `replay` publishes once and exits,
+`rebuild` throws the index away, replays it from the evidence store and the
+journal, and reads the bodies into claims again.
 
 Configuration is environment only; nothing is compiled in and nothing is read
 from a configuration file.
@@ -106,8 +111,9 @@ poll produces no bytes to store at all.
 
 Together they reconstruct the index completely. The worker rebuilds on start
 whenever it finds the index empty, so deleting the database file is a
-recoverable state and not a loss, and there are no migrations: a schema that has
-moved on is not migrated, the file is deleted and the index is rebuilt.
+recoverable state and not a loss, and there are no migrations: the index records
+the digest of the schema it was built with, and a worker or `collect` run that
+carries another schema drops the index and rebuilds it.
 
 Back up `evidence/` and `journal/`. Backing up `db/` is optional and only saves
 the replay.
@@ -143,12 +149,13 @@ Splice is tracked by tags rather than by its releases endpoint.
 
 ## What is real here and what is not
 
-Collection is real: the git-backed sources bank evidence, journal lines and
-index rows on their first run. Nothing normalizes those observations yet, so no
-claim is derived from them, and the dataset the api serves is still placeholder
-content written by hand with `metadata.content` set to `PLACEHOLDER` so a
-consumer can tell. The shape of the contract is real; the published values are
-not.
+Collection is real: the git and http sources bank evidence, journal lines and
+index rows on their first run. One source is normalized: every banked body of
+the SV Operations Schedule is read into claims in the index, one set per typed
+record, keyed by the record's own id. Nothing publishes a claim yet, so the
+dataset the api serves is still placeholder content written by hand with
+`metadata.content` set to `PLACEHOLDER` so a consumer can tell. The shape of the
+contract is real; the published values are not.
 
 Normalizers come after the corpus, not before it: each one is tested against
 real banked snapshots, never against fabricated fragments, so the snapshots have

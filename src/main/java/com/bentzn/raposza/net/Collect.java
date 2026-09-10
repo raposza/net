@@ -62,6 +62,7 @@ public final class Collect {
             System.err.println("collect: " + e);
             return 1;
         }
+        Worker.openIndex();
         int cntFail = 0;
         try (Connection conn = Db.connection()) {
             Db.schema(conn);
@@ -71,6 +72,7 @@ public final class Collect {
                     cntFail++;
                 }
             }
+            Normalize.report(Normalize.pending(conn, Config.evidenceDir()));
         }
         catch (SQLException | IOException e) {
             System.err.println("collect: " + e);

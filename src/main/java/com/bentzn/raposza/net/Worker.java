@@ -54,20 +54,25 @@ public final class Worker {
 
     /**
      * Brings the index into existence and, when it holds nothing, rebuilds it
-     * from the evidence store and the journal. A deleted database file is
-     * therefore a recoverable state and not a loss.
+     * from the evidence store and the journal; then reads every banked body a
+     * normalizer has not read yet. A deleted database file is therefore a
+     * recoverable state and not a loss, and so is an index built with another
+     * schema, which is dropped and rebuilt the same way.
      */
     static void openIndex() {
         try (Connection conn = Db.connection()) {
-            Db.schema(conn);
-            if (!Db.isEmpty(conn)) {
-                return;
+            if (Db.schema(conn)) {
+                System.out.println("index schema changed: the index was dropped and is rebuilt from evidence and"
+                        + " journal");
             }
-            Rebuild.Result res = Rebuild.run(conn, Config.evidenceDir(), Config.journalDir(), Sources.load());
-            if (res.cntAttempt() > 0 || res.cntMissing() > 0) {
-                System.out.println("rebuilt index from journal: " + res.cntAttempt() + " attempts, "
-                        + res.cntObservation() + " observations, " + res.cntMissing() + " bodies missing");
+            if (Db.isEmpty(conn)) {
+                Rebuild.Result res = Rebuild.run(conn, Config.evidenceDir(), Config.journalDir(), Sources.load());
+                if (res.cntAttempt() > 0 || res.cntMissing() > 0) {
+                    System.out.println("rebuilt index from journal: " + res.cntAttempt() + " attempts, "
+                            + res.cntObservation() + " observations, " + res.cntMissing() + " bodies missing");
+                }
             }
+            Normalize.report(Normalize.pending(conn, Config.evidenceDir()));
         }
         catch (SQLException | IOException e) {
             System.err.println("index unavailable: " + e);
