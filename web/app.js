@@ -20,10 +20,10 @@ async function get(path) {
  * may be the thing that is broken. /api/v1/status is then the authority, and a
  * disagreement between the two is itself worth shouting about. */
 const ENV_BY_HOST = {
-  "raposza.com": "prd",
-  "rc.raposza.com": "rc",
-  "stg.raposza.com": "stg",
-  "dev.raposza.com": "dev"
+  "net.raposza.com": "prd",
+  "rc.net.raposza.com": "rc",
+  "stg.net.raposza.com": "stg",
+  "dev.net.raposza.com": "dev"
 };
 
 const ENV_LABEL = {
