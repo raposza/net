@@ -72,7 +72,7 @@ public final class Collect {
                     cntFail++;
                 }
             }
-            Normalize.report(Normalize.pending(conn, Config.evidenceDir()));
+            Normalize.pass(conn, Config.evidenceDir());
         }
         catch (SQLException | IOException e) {
             System.err.println("collect: " + e);

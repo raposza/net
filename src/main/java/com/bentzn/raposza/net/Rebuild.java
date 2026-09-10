@@ -99,7 +99,7 @@ public final class Rebuild {
             Result res = run(conn, Config.evidenceDir(), Config.journalDir(), Sources.load());
             System.out.println("rebuilt " + res.cntAttempt() + " attempts, " + res.cntObservation()
                     + " observations, " + res.cntMissing() + " bodies missing");
-            Normalize.report(Normalize.pending(conn, Config.evidenceDir()));
+            Normalize.pass(conn, Config.evidenceDir());
         }
         catch (SQLException | IOException e) {
             System.err.println("rebuild failed: " + e);

@@ -72,7 +72,7 @@ public final class Worker {
                             + res.cntObservation() + " observations, " + res.cntMissing() + " bodies missing");
                 }
             }
-            Normalize.report(Normalize.pending(conn, Config.evidenceDir()));
+            Normalize.pass(conn, Config.evidenceDir());
         }
         catch (SQLException | IOException e) {
             System.err.println("index unavailable: " + e);

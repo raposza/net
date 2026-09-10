@@ -130,3 +130,59 @@ create table if not exists index_meta (
     meta_key            varchar(100) primary key,
     meta_value          varchar(200) not null
 );
+
+-- Events, derived from the claims of a normalizer over the observations of its
+-- source in the order they were banked: one per upstream record. The whole set
+-- for a source is re-derived and replaced whenever its claims change, so these
+-- tables hold nothing the claims do not.
+create table if not exists event (
+    id                  varchar(64)  primary key,
+    source_id           varchar(200) not null references source (id),
+    subject_ref         varchar(64)  not null,
+    kind                varchar(100) not null,
+    network             varchar(50),
+    status              varchar(30),
+    effective_from      varchar(10),
+    effective_to        varchar(10),
+    version             varchar(50),
+    version_precision   varchar(30),
+    version_change      varchar(30),
+    title               varchar(20000),
+    description         varchar(20000),
+    upstream_type       varchar(200),
+    withdrawn           boolean      not null,
+    revision            integer      not null,
+    first_observed_at   timestamp with time zone not null,
+    last_banked_at      timestamp with time zone not null,
+    last_observation_id varchar(64)  not null
+);
+
+create index if not exists event_source_ix
+    on event (source_id, subject_ref);
+
+-- Every revision of every event: the observation that caused it and the fields
+-- that moved, as a JSON array of {field, old, new}.
+create table if not exists event_revision (
+    event_id            varchar(64)  not null references event (id),
+    revision            integer      not null,
+    observation_id      varchar(64)  not null,
+    observed_at         timestamp with time zone not null,
+    changes             varchar(60000) not null,
+    primary key (event_id, revision)
+);
+
+-- Change records in sequence order per source. The sequence only grows as
+-- observations are added, which is what a consumer's cursor rests on.
+create table if not exists event_change (
+    change_id           varchar(64)  primary key,
+    source_id           varchar(200) not null references source (id),
+    seq                 bigint       not null,
+    change_type         varchar(40)  not null,
+    event_id            varchar(64)  not null references event (id),
+    revision            integer      not null,
+    observed_at         timestamp with time zone not null,
+    constraint event_change_seq_uq unique (source_id, seq),
+    constraint event_change_type_ck
+        check (change_type in ('EVENT_CREATED', 'EVENT_CONFIRMED', 'EVENT_CANCELLED', 'EVENT_RESCHEDULED',
+                               'EVENT_VERSION_ATTACHED', 'EVENT_WITHDRAWN', 'EVENT_CORRECTED'))
+);

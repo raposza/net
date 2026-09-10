@@ -152,10 +152,13 @@ Splice is tracked by tags rather than by its releases endpoint.
 Collection is real: the git and http sources bank evidence, journal lines and
 index rows on their first run. One source is normalized: every banked body of
 the SV Operations Schedule is read into claims in the index, one set per typed
-record, keyed by the record's own id. Nothing publishes a claim yet, so the
-dataset the api serves is still placeholder content written by hand with
-`metadata.content` set to `PLACEHOLDER` so a consumer can tell. The shape of the
-contract is real; the published values are not.
+record, keyed by the record's own id. From those claims the index derives one
+event per record, with a revision and a change record for every banked body
+that moves one of its fields; a record that disappears is withdrawn, not
+cancelled, and a body re-sorted upstream changes nothing. Nothing publishes an
+event yet, so the dataset the api serves is still placeholder content written
+by hand with `metadata.content` set to `PLACEHOLDER` so a consumer can tell.
+The shape of the contract is real; the published values are not.
 
 Normalizers come after the corpus, not before it: each one is tested against
 real banked snapshots, never against fabricated fragments, so the snapshots have

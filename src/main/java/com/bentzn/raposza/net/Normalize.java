@@ -45,6 +45,36 @@ public final class Normalize {
 
 
     /**
+     * @return every normalizer, in the order they run
+     */
+    public static List<Normalizer> all() {
+        return LST_NORMALIZER;
+    }
+
+
+    /**
+     * Reads every body not yet read, then re-derives the events when that read
+     * anything or the index holds no event yet. This is the one call the worker,
+     * collect and rebuild make after banking.
+     *
+     * @param conn an open connection, schema applied
+     * @param dirEvidence the evidence store root
+     * @throws SQLException when the index cannot be read or written
+     */
+    public static void pass(Connection conn, Path dirEvidence) throws SQLException {
+        Result res = pending(conn, dirEvidence);
+        report(res);
+        if (res.cntObservation() == 0 && !Events.isEmpty(conn)) {
+            return;
+        }
+        int cntEvent = Events.refresh(conn);
+        if (res.cntObservation() > 0 || cntEvent > 0) {
+            System.out.println("events derived: " + cntEvent);
+        }
+    }
+
+
+    /**
      * @param idSource a source id
      * @return the normalizer that reads it, or null when none does
      */
