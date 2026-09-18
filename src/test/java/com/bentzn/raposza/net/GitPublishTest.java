@@ -105,7 +105,9 @@ class GitPublishTest {
                         "content", "PLACEHOLDER"),
                 "networks", List.of(Dataset.map(
                         "network", "DEVNET",
-                        "splice", Dataset.map("currentVersion", verSplice))));
+                        "splice", Dataset.map("currentVersion", verSplice),
+                        "publicationId", idPublication,
+                        "updatedAt", stampCreated)));
     }
 
 

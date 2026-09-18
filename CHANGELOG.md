@@ -4,6 +4,17 @@
 Releases before 0.2.0 carried no version and no tag; their history is the commit
 log.
 
+## 0.2.1
+
+- The git publication channel committed on every publication instead of only on
+  a change. The publication id and the creation stamp are repeated on every
+  network and every event, and the comparison blanked them in the metadata block
+  alone, so every document differed from the last. Measured on a live
+  environment as one commit a minute. Both values are now blanked wherever they
+  appear, matched by value rather than by field name, so a timestamp that later
+  carries a real moment counts as a change with no list of field names to keep
+  current.
+
 ## 0.2.0
 
 - The git publication channel, the third delivery channel beside the api and the

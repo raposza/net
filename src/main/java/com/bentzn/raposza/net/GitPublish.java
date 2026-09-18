@@ -11,6 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -296,13 +297,48 @@ public final class GitPublish {
     private static String canonical(byte[] bytesJson) throws IOException {
         Map<String, Object> mapDs = MAPPER.readValue(bytesJson, new TypeReference<Map<String, Object>>() {
         });
-        Object objMeta = mapDs.get("metadata");
-        if (objMeta instanceof Map) {
-            Map<String, Object> mapMeta = cast(objMeta);
-            mapMeta.put("publicationId", "");
-            mapMeta.put("createdAt", "");
+        Map<String, Object> mapMeta = Dataset.meta(mapDs);
+        return MAPPER.writeValueAsString(blank(mapDs, String.valueOf(mapMeta.get("publicationId")),
+                String.valueOf(mapMeta.get("createdAt"))));
+    }
+
+
+    /**
+     * Blanks every value that is the publication's own id or its creation
+     * stamp, wherever in the document it appears. Both are repeated through the
+     * corpus - on every network, on every event - so blanking the metadata
+     * block alone leaves a copy in most records and every publication then
+     * reads as a change: measured on DEV as one commit a minute.
+     *
+     * Matching by VALUE rather than by field name keeps this true as the
+     * corpus grows. A timestamp that carries a real moment differs from the
+     * creation stamp and counts as a change, with no list of field names to
+     * keep current. The cost is that a real moment falling in the same second
+     * as the publication is not seen until the next one.
+     *
+     * @param objAny a node of the parsed document, edited in place
+     * @param idPublication the publication id to blank
+     * @param stampCreated the creation stamp to blank
+     * @return the node
+     */
+    private static Object blank(Object objAny, String idPublication, String stampCreated) {
+        if (objAny instanceof Map) {
+            Map<String, Object> mapNode = cast(objAny);
+            for (Map.Entry<String, Object> entOne : mapNode.entrySet()) {
+                entOne.setValue(blank(entOne.getValue(), idPublication, stampCreated));
+            }
+            return mapNode;
         }
-        return MAPPER.writeValueAsString(mapDs);
+        if (objAny instanceof List) {
+            List<Object> lstNode = castList(objAny);
+            for (int cntItem = 0; cntItem < lstNode.size(); cntItem++) {
+                lstNode.set(cntItem, blank(lstNode.get(cntItem), idPublication, stampCreated));
+            }
+            return lstNode;
+        }
+        if (objAny instanceof String && (objAny.equals(idPublication) || objAny.equals(stampCreated)))
+            return "";
+        return objAny;
     }
 
 
@@ -452,6 +488,12 @@ public final class GitPublish {
     @SuppressWarnings("unchecked")
     private static Map<String, Object> cast(Object objAny) {
         return (Map<String, Object>) objAny;
+    }
+
+
+    @SuppressWarnings("unchecked")
+    private static List<Object> castList(Object objAny) {
+        return (List<Object>) objAny;
     }
 
 
