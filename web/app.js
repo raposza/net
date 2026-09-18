@@ -64,6 +64,9 @@ function cell(text, cls) {
 }
 
 function tagCell(value) {
+  if (!value) {
+    return cell(value);
+  }
   const td = document.createElement("td");
   const span = document.createElement("span");
   span.className = "tag tag-" + value;
@@ -86,26 +89,36 @@ function rows(tableId, list, build) {
 
 function renderNetworks(data) {
   rows("networks", data.networks, function (n) {
+    const splice = n.splice || {};
+    const next = n.next || {};
     return [
       cell(n.network),
-      cell(n.splice && n.splice.currentVersion, "mono"),
-      cell(n.splice && n.splice.minimumVersion, "mono"),
-      cell(n.synchronizer && n.synchronizer.version, "mono"),
-      cell(n.synchronizer && n.synchronizer.serialId, "mono"),
-      cell(n.nextEvent, "mono")
+      cell(splice.scheduledVersion, "mono"),
+      cell(splice.scheduledFrom, "mono"),
+      cell(splice.minimumVersion, "mono"),
+      cell(next.version, "mono"),
+      cell(next.from, "mono")
     ];
   });
 }
 
+/* Upcoming only. An event whose date has passed answers no question a reader of
+ * this page came with, and a record withdrawn upstream states nothing at all.
+ * Both remain in the API, which is where history is read. */
 function renderEvents(data) {
-  rows("events", data.events, function (e) {
+  const dayToday = new Date().toISOString().slice(0, 10);
+  const list = (data.events || []).filter(function (e) {
+    const from = e.effective && e.effective.from;
+    return !e.withdrawn && (!from || from >= dayToday);
+  });
+  rows("events", list, function (e) {
     return [
       cell(e.network),
-      cell(e.type),
-      cell(e.slot && e.slot.period, "mono"),
-      cell(e.subject && e.subject.version, "mono"),
+      cell(e.kind),
+      cell(e.version && e.version.value, "mono"),
       tagCell(e.status),
-      cell((e.effective && e.effective.from) + " (" + (e.effective && e.effective.precision) + ")", "mono")
+      cell(e.effective && e.effective.from, "mono"),
+      cell(e.title)
     ];
   });
 }
@@ -116,6 +129,16 @@ function renderSources(data) {
   });
 }
 
+/* What a publication is made of. An environment that has banked nothing and one
+ * whose index is broken both serve empty tables, and a reader must not have to
+ * guess which they are looking at. */
+const CONTENT_NOTE = {
+  EMPTY: "This environment has banked no observation, so the tables below are empty. " +
+    "That is not a statement that nothing is scheduled.",
+  UNAVAILABLE: "The index could not be read, so this publication carries no event and " +
+    "the networks carry no value."
+};
+
 function renderStatus(status) {
   const claimed = status.environment;
   const guessed = envFromHost();
@@ -125,11 +148,12 @@ function renderStatus(status) {
   document.getElementById("status").textContent =
     "publication " + status.publicationId +
     ", " + status.publicationAgeSeconds + " s old" +
-    ", build " + status.buildId;
-  if (status.content === "PLACEHOLDER") {
+    ", build " + status.buildId +
+    ", content " + status.content;
+  const note = CONTENT_NOTE[status.content];
+  if (note) {
     const banner = document.getElementById("banner");
-    banner.textContent =
-      "Placeholder content. No source has been collected; every value below was written by hand.";
+    banner.textContent = note;
     banner.hidden = false;
   }
 }

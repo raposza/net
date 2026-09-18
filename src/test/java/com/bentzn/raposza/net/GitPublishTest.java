@@ -6,12 +6,14 @@ package com.bentzn.raposza.net;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -42,7 +44,7 @@ class GitPublishTest {
         pub.turn(ds("pub_1", "2026-09-18T06:00:00Z", "0.8.1"));
         assertEquals(1, commits(dirBare, "main"));
         assertTrue(show(dirBare, "main", GitPublish.NAME_ARTEFACT).contains("0.8.1"));
-        assertTrue(show(dirBare, "main", GitPublish.NAME_README).contains("SCHEDULED, not running"));
+        assertTrue(show(dirBare, "main", GitPublish.NAME_README).contains("SCHEDULED, NOT RUNNING"));
 
         pub.turn(ds("pub_2", "2026-09-18T06:01:00Z", "0.8.1"));
         assertEquals(1, commits(dirBare, "main"), "a new publication id alone is not a change");
@@ -86,6 +88,35 @@ class GitPublishTest {
     }
 
 
+    @Test
+    void namesTagsByDayAndSuffixesOnlyWhenTheDayIsTaken() {
+        Instant instDay = Instant.parse("2026-09-18T07:41:40Z");
+        assertEquals("v2026-09-18", GitPublish.nextTag(instDay, List.of()));
+        assertEquals("v2026-09-18.2", GitPublish.nextTag(instDay, List.of("v2026-09-18")));
+        assertEquals("v2026-09-18.3", GitPublish.nextTag(instDay, List.of("v2026-09-18", "v2026-09-18.2")));
+        assertEquals("v2026-09-18", GitPublish.nextTag(instDay, List.of("v2026-09-17", "Test-release")));
+    }
+
+
+    @Test
+    void readsOwnerAndRepositoryFromEitherRemoteForm() {
+        assertEquals("raposza/net_data", GitPublish.slug("git@github.com:raposza/net_data.git"));
+        assertEquals("raposza/net_data_dev", GitPublish.slug("https://github.com/raposza/net_data_dev.git"));
+        assertEquals("raposza/net_data", GitPublish.slug("ssh://git@github.com/raposza/net_data"));
+        assertNull(GitPublish.slug("git@git.example.invalid:raposza/net_data.git"));
+        assertNull(GitPublish.slug(null));
+    }
+
+
+    @Test
+    void cutsNoReleaseWithoutACredential() throws Exception {
+        Assumptions.assumeTrue(hasGit(), "git is not on the path");
+        Assumptions.assumeTrue(System.getenv("FEED_GITHUB_TOKEN") == null, "a credential is set in this shell");
+        GitPublish pub = GitPublish.of(spec(bare(), -1));
+        assertFalse(pub.release("v2026-09-18", "MainNet: Splice 0.8.2 scheduled 2026-09-22", ""));
+    }
+
+
     private GitPublish.Spec spec(Path dirBare, int secBeat) {
         return new GitPublish.Spec(dirBare.toUri().toString(), "main", "heartbeat",
                 dirTmp.resolve("work"), null, null, 0, secBeat, "dev");
@@ -105,7 +136,7 @@ class GitPublishTest {
                         "content", "PLACEHOLDER"),
                 "networks", List.of(Dataset.map(
                         "network", "DEVNET",
-                        "splice", Dataset.map("currentVersion", verSplice),
+                        "splice", Dataset.map("scheduledVersion", verSplice),
                         "publicationId", idPublication,
                         "updatedAt", stampCreated)));
     }

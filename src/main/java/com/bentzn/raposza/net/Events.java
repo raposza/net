@@ -16,6 +16,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,7 +62,7 @@ public final class Events {
     /** The event fields a revision is made of, in the order they are compared. */
     public static final List<String> LST_FIELD = List.of("kind", "network", "status", "effective.from",
             "effective.to", "version", "version.precision", "version.change", "title", "description",
-            "upstream.type", "withdrawn");
+            "upstream.type", "commit_sha", "commit_time", "withdrawn");
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -78,6 +79,20 @@ public final class Events {
     private static final String WITHDRAWN = "EVENT_WITHDRAWN";
 
     private static final String CORRECTED = "EVENT_CORRECTED";
+
+    /** Null sorts last; the event fields are text and some of them are absent. */
+    private static final Comparator<String> CMP_TEXT = Comparator.nullsLast(Comparator.naturalOrder());
+
+    /**
+     * Publication order: effective date, then network, then kind, then
+     * identifier. It is a total order over fields the derivation already holds,
+     * so two publications of the same index are byte-identical.
+     */
+    private static final Comparator<Event> CMP_PUBLISH = Comparator
+            .comparing((Event evt) -> evt.mapField().get("effective.from"), CMP_TEXT)
+            .thenComparing((Event evt) -> evt.mapField().get("network"), CMP_TEXT)
+            .thenComparing((Event evt) -> evt.mapField().get("kind"), CMP_TEXT)
+            .thenComparing(Event::id);
 
 
     private Events() {
@@ -257,7 +272,204 @@ public final class Events {
     }
 
 
-    private static long revise(State state, Map<String, String> mapNew, Snapshot snap, List<String> lstType,
+    /**
+     * Every event the index holds, as it is published, grouped by source in
+     * source order and ordered within a source by CMP_PUBLISH.
+     *
+     * @param conn an open connection, schema applied
+     * @return one map per event
+     * @throws SQLException when the read fails
+     */
+    public static List<Object> published(Connection conn) throws SQLException {
+        String sqlRead = "select id, source_id, subject_ref, kind, network, status, effective_from,"
+                + " effective_to, version, version_precision, version_change, title, description,"
+                + " upstream_type, commit_sha, commit_time, withdrawn, revision,"
+                + " first_observed_at, last_banked_at,"
+                + " last_observation_id from event";
+        Map<String, List<Event>> mapSource = new TreeMap<>();
+        try (PreparedStatement stmt = conn.prepareStatement(sqlRead); ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                Map<String, String> mapField = new TreeMap<>();
+                mapField.put("kind", rs.getString(4));
+                mapField.put("network", rs.getString(5));
+                mapField.put("status", rs.getString(6));
+                mapField.put("effective.from", rs.getString(7));
+                mapField.put("effective.to", rs.getString(8));
+                mapField.put("version", rs.getString(9));
+                mapField.put("version.precision", rs.getString(10));
+                mapField.put("version.change", rs.getString(11));
+                mapField.put("title", rs.getString(12));
+                mapField.put("description", rs.getString(13));
+                mapField.put("upstream.type", rs.getString(14));
+                mapField.put("commit_sha", rs.getString(15));
+                mapField.put("commit_time", rs.getString(16));
+                mapField.put("withdrawn", rs.getBoolean(17) ? "true" : "false");
+                Event evt = new Event(rs.getString(1), rs.getString(3), mapField, rs.getInt(18),
+                        rs.getObject(19, OffsetDateTime.class).toInstant(),
+                        rs.getObject(20, OffsetDateTime.class).toInstant(), rs.getString(21));
+                mapSource.computeIfAbsent(rs.getString(2), idNew -> new ArrayList<>()).add(evt);
+            }
+        }
+        List<Object> lstOut = new ArrayList<>();
+        for (Normalizer norm : Normalize.all()) {
+            List<Event> lstOne = mapSource.remove(norm.sourceId());
+            if (lstOne != null) {
+                lstOut.addAll(published(norm.sourceId(), norm.id(), lstOne));
+            }
+        }
+        for (Map.Entry<String, List<Event>> entSource : mapSource.entrySet()) {
+            lstOut.addAll(published(entSource.getKey(), null, entSource.getValue()));
+        }
+        return joined(lstOut);
+    }
+
+
+    /**
+     * The published form of a derived event. What is published is what the index
+     * holds: no field is invented and none is filled in from elsewhere. The
+     * effective precision is DATE whenever a date was read, because the
+     * normalizer stores a date or nothing; a clock time upstream carries no zone
+     * and never becomes an instant.
+     *
+     * The upstream reference is published. It is the source's own public record
+     * identifier, it is what event identity rests on for this source, and a
+     * consumer that wants to look a record up upstream has nothing else.
+     *
+     * @param idSource the source the events belong to
+     * @param idNormalizer the normalizer that read it, or null when none does
+     * @param lstEvent the events, in any order
+     * @return one map per event, in publication order
+     */
+    public static List<Object> published(String idSource, String idNormalizer, List<Event> lstEvent) {
+        List<Event> lstSorted = new ArrayList<>(lstEvent);
+        lstSorted.sort(CMP_PUBLISH);
+        List<Object> lstOut = new ArrayList<>();
+        for (Event evt : lstSorted) {
+            Map<String, String> mapField = evt.mapField();
+            String dayFrom = mapField.get("effective.from");
+            lstOut.add(Dataset.map(
+                    "id", evt.id(),
+                    "schemaVersion", Integer.valueOf(1),
+                    "kind", mapField.get("kind"),
+                    "network", mapField.get("network"),
+                    "status", mapField.get("status"),
+                    "withdrawn", Boolean.valueOf("true".equals(mapField.get("withdrawn"))),
+                    "effective", Dataset.map(
+                            "from", dayFrom,
+                            "to", mapField.get("effective.to"),
+                            "precision", dayFrom == null ? "UNKNOWN" : "DATE"),
+                    "version", Dataset.map(
+                            "value", mapField.get("version"),
+                            "precision", mapField.get("version.precision"),
+                            "change", mapField.get("version.change")),
+                    "title", mapField.get("title"),
+                    "description", mapField.get("description"),
+                    "upstream", Dataset.map("type", mapField.get("upstream.type"),
+                            "ref", evt.subjectRef()),
+                    "commit_sha", mapField.get("commit_sha"),
+                    "commit_time", mapField.get("commit_time"),
+                    "revision", Integer.valueOf(evt.revision()),
+                    "firstObservedAt", Dataset.iso(evt.firstObservedAt()),
+                    "lastBankedAt", Dataset.iso(evt.lastBankedAt()),
+                    "provenance", List.of(Dataset.map(
+                            "sourceId", idSource,
+                            "observationId", evt.lastObservationId(),
+                            "normalizer", idNormalizer))));
+        }
+        return lstOut;
+    }
+
+
+    /**
+     * One published event per kind and upstream reference, however many sources
+     * described it.
+     *
+     * The derivation is per source and an event identifier is derived from the
+     * source and the reference, so two sources describing one release produce
+     * two rows. Publishing both would put duplicates in the contract, and a
+     * source that holds a rolling window would publish a withdrawal every time
+     * an entry left it. The join is therefore made here, at publication, and the
+     * index keeps both rows, and what is published is one event carrying a
+     * provenance record per source that described it.
+     *
+     * The PRIMARY is whichever source comes first in Normalize.all(), which is a
+     * declared order and not an accident of iteration. The primary's values
+     * stand; the other fills in only what the primary left null, and its
+     * withdrawn flag is ignored, because a record leaving one source's window
+     * says nothing about a record another source still carries.
+     *
+     * @param lstPublished published events, in source order
+     * @return the joined list, in the order the primaries appeared
+     */
+    public static List<Object> joined(List<Object> lstPublished) {
+        Map<String, Map<String, Object>> mapPrimary = new LinkedHashMap<>();
+        List<Object> lstOut = new ArrayList<>();
+        for (Object objEvent : lstPublished) {
+            if (!(objEvent instanceof Map)) {
+                continue;
+            }
+            Map<String, Object> mapEvent = cast(objEvent);
+            String keyJoin = String.valueOf(mapEvent.get("kind")) + '\u0000' + ref(mapEvent);
+            Map<String, Object> mapFirst = mapPrimary.get(keyJoin);
+            if (mapFirst == null) {
+                mapPrimary.put(keyJoin, mapEvent);
+                lstOut.add(mapEvent);
+                continue;
+            }
+            fill(mapFirst, mapEvent);
+        }
+        return lstOut;
+    }
+
+
+    /** Fills the primary from the secondary wherever the primary says nothing. */
+    private static void fill(Map<String, Object> mapFirst, Map<String, Object> mapSecond) {
+        for (Map.Entry<String, Object> entOne : mapSecond.entrySet()) {
+            String nameField = entOne.getKey();
+            if ("provenance".equals(nameField) || "withdrawn".equals(nameField)
+                    || "id".equals(nameField) || "revision".equals(nameField)) {
+                continue;
+            }
+            Object objMine = mapFirst.get(nameField);
+            if (objMine instanceof Map && entOne.getValue() instanceof Map) {
+                fill(cast(objMine), cast(entOne.getValue()));
+            }
+            else if (objMine == null) {
+                mapFirst.put(nameField, entOne.getValue());
+            }
+        }
+        Object objProvenance = mapFirst.get("provenance");
+        if (objProvenance instanceof List && mapSecond.get("provenance") instanceof List) {
+            List<Object> lstBoth = new ArrayList<>(castObjects(objProvenance));
+            lstBoth.addAll(castObjects(mapSecond.get("provenance")));
+            mapFirst.put("provenance", lstBoth);
+        }
+    }
+
+
+    private static String ref(Map<String, Object> mapEvent) {
+        Object objUpstream = mapEvent.get("upstream");
+        if (objUpstream instanceof Map) {
+            return String.valueOf(cast(objUpstream).get("ref"));
+        }
+        return String.valueOf(mapEvent.get("id"));
+    }
+
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> cast(Object objAny) {
+        return (Map<String, Object>) objAny;
+    }
+
+
+    @SuppressWarnings("unchecked")
+    private static List<Object> castObjects(Object objAny) {
+        return (List<Object>) objAny;
+    }
+
+
+    private static long revise(State state, Map<String, String> mapNew, Snapshot snap,
+            List<String> lstType,
             List<Revision> lstRevision, List<ChangeRecord> lstRecord, long seqNext) {
         List<Change> lstChange = changes(state.mapField, mapNew);
         state.mapField = mapNew;
@@ -442,8 +654,9 @@ public final class Events {
     private static void insertEvents(Connection conn, String idSource, List<Event> lstEvent) throws SQLException {
         String sqlIns = "insert into event (id, source_id, subject_ref, kind, network, status, effective_from,"
                 + " effective_to, version, version_precision, version_change, title, description, upstream_type,"
-                + " withdrawn, revision, first_observed_at, last_banked_at, last_observation_id)"
-                + " values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+                + " commit_sha, commit_time, withdrawn, revision, first_observed_at, last_banked_at,"
+                + " last_observation_id)"
+                + " values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
         try (PreparedStatement stmt = conn.prepareStatement(sqlIns)) {
             for (Event evt : lstEvent) {
                 Map<String, String> mapField = evt.mapField();
@@ -461,11 +674,13 @@ public final class Events {
                 stmt.setString(12, mapField.get("title"));
                 stmt.setString(13, mapField.get("description"));
                 stmt.setString(14, mapField.get("upstream.type"));
-                stmt.setBoolean(15, "true".equals(mapField.get("withdrawn")));
-                stmt.setInt(16, evt.revision());
-                stmt.setObject(17, OffsetDateTime.ofInstant(evt.firstObservedAt(), ZoneOffset.UTC));
-                stmt.setObject(18, OffsetDateTime.ofInstant(evt.lastBankedAt(), ZoneOffset.UTC));
-                stmt.setString(19, evt.lastObservationId());
+                stmt.setString(15, mapField.get("commit_sha"));
+                stmt.setString(16, mapField.get("commit_time"));
+                stmt.setBoolean(17, "true".equals(mapField.get("withdrawn")));
+                stmt.setInt(18, evt.revision());
+                stmt.setObject(19, OffsetDateTime.ofInstant(evt.firstObservedAt(), ZoneOffset.UTC));
+                stmt.setObject(20, OffsetDateTime.ofInstant(evt.lastBankedAt(), ZoneOffset.UTC));
+                stmt.setString(21, evt.lastObservationId());
                 stmt.addBatch();
             }
             if (!lstEvent.isEmpty()) {

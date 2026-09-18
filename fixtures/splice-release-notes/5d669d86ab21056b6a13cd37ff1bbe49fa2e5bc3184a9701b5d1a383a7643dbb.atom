@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/" xml:lang="en-US">
+  <id>tag:github.com,2008:https://github.com/canton-network/splice/releases</id>
+  <link type="text/html" rel="alternate" href="https://github.com/canton-network/splice/releases"/>
+  <link type="application/atom+xml" rel="self" href="https://github.com/canton-network/splice/releases.atom"/>
+  <title>Release notes from splice</title>
+  <updated>2026-09-18T10:39:53+01:00</updated>
+  <entry>
+    <id>tag:github.com,2008:Repository/753306119/0.8.3</id>
+    <updated>2026-09-18T10:39:53+01:00</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/canton-network/splice/releases/tag/0.8.3"/>
+    <title>[release] Release 0.8.3 [ci] (#7389)</title>
+    <content type="html">&lt;p&gt;See &lt;a class=&quot;issue-link js-issue-link&quot; data-error-text=&quot;Failed to load title&quot; data-id=&quot;5423552429&quot; data-permission-text=&quot;Title is private&quot; data-url=&quot;https://github.com/DACH-NY/canton-network-internal/issues/6999&quot; data-hovercard-type=&quot;issue&quot; data-hovercard-url=&quot;/DACH-NY/canton-network-internal/issues/6999/hovercard&quot; href=&quot;https://github.com/DACH-NY/canton-network-internal/issues/6999&quot;&gt;DACH-NY/canton-network-internal#6999&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Signed-off-by: Martin Florian &lt;a href=&quot;mailto:martin.florian@digitalasset.com&quot;&gt;martin.florian@digitalasset.com&lt;/a&gt;&lt;/p&gt;</content>
+    <author>
+      <name>martinflorian-da</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/u/113591290?s=60&amp;v=4"/>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/753306119/0.8.2</id>
+    <updated>2026-09-17T17:29:55+01:00</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/canton-network/splice/releases/tag/0.8.2"/>
+    <title>[release] Release 0.8.2 [ci] (#7377)</title>
+    <content type="html">&lt;p&gt;See &lt;a class=&quot;issue-link js-issue-link&quot; data-error-text=&quot;Failed to load title&quot; data-id=&quot;5423552429&quot; data-permission-text=&quot;Title is private&quot; data-url=&quot;https://github.com/DACH-NY/canton-network-internal/issues/6999&quot; data-hovercard-type=&quot;issue&quot; data-hovercard-url=&quot;/DACH-NY/canton-network-internal/issues/6999/hovercard&quot; href=&quot;https://github.com/DACH-NY/canton-network-internal/issues/6999&quot;&gt;DACH-NY/canton-network-internal#6999&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Signed-off-by: Martin Florian &lt;a href=&quot;mailto:martin.florian@digitalasset.com&quot;&gt;martin.florian@digitalasset.com&lt;/a&gt;&lt;/p&gt;</content>
+    <author>
+      <name>martinflorian-da</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/u/113591290?s=60&amp;v=4"/>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/753306119/0.8.1</id>
+    <updated>2026-09-11T06:12:03+01:00</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/canton-network/splice/releases/tag/0.8.1"/>
+    <title>[release] Release 0.8.1 [ci] (#7245)</title>
+    <content type="html">&lt;p&gt;Signed-off-by: Martin Florian &lt;a href=&quot;mailto:martin.florian@digitalasset.com&quot;&gt;martin.florian@digitalasset.com&lt;/a&gt;&lt;/p&gt;</content>
+    <author>
+      <name>martinflorian-da</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/u/113591290?s=60&amp;v=4"/>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/753306119/0.8.0</id>
+    <updated>2026-09-04T16:45:28+01:00</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/canton-network/splice/releases/tag/0.8.0"/>
+    <title>[release] Release 0.8.0 [ci] (#7118)</title>
+    <content type="html">&lt;p&gt;Signed-off-by: Mateusz Błażejewski &lt;a href=&quot;mailto:mateusz.blazejewski@digitalasset.com&quot;&gt;mateusz.blazejewski@digitalasset.com&lt;/a&gt;&lt;/p&gt;</content>
+    <author>
+      <name>mblaze-da</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/u/236361009?s=60&amp;v=4"/>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/753306119/0.7.5</id>
+    <updated>2026-08-27T17:07:29+01:00</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/canton-network/splice/releases/tag/0.7.5"/>
+    <title>0.7.5: [release] . [ci] (#7004)</title>
+    <content type="html">&lt;p&gt;Signed-off-by: Itai Segall &lt;a href=&quot;mailto:itai.segall@digitalasset.com&quot;&gt;itai.segall@digitalasset.com&lt;/a&gt;&lt;/p&gt;</content>
+    <author>
+      <name>isegall-da</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/u/109973424?s=60&amp;v=4"/>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/753306119/0.7.4</id>
+    <updated>2026-08-20T16:14:43+01:00</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/canton-network/splice/releases/tag/0.7.4"/>
+    <title>[release] Release 0.7.4 [ci] (#6889)</title>
+    <content type="html">&lt;p&gt;Signed-off-by: Nicu Reut &lt;a href=&quot;mailto:nicu.reut@digitalasset.com&quot;&gt;nicu.reut@digitalasset.com&lt;/a&gt;&lt;/p&gt;</content>
+    <author>
+      <name>nicu-da</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/u/86789950?s=60&amp;v=4"/>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/753306119/0.7.3</id>
+    <updated>2026-08-15T12:55:46+01:00</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/canton-network/splice/releases/tag/0.7.3"/>
+    <title>[release] Release 0.7.3 (#6790)</title>
+    <content type="html">&lt;p&gt;[static]&lt;/p&gt;
+&lt;p&gt;Signed-off-by: &lt;a href=&quot;mailto:moritz.kiefer@digitalasset.com&quot;&gt;moritz.kiefer@digitalasset.com&lt;/a&gt; &lt;a href=&quot;mailto:moritz.kiefer@purelyfunctional.org&quot;&gt;moritz.kiefer@purelyfunctional.org&lt;/a&gt;&lt;br&gt;
+Co-authored-by: &lt;a href=&quot;mailto:moritz.kiefer@digitalasset.com&quot;&gt;moritz.kiefer@digitalasset.com&lt;/a&gt; &lt;a href=&quot;mailto:moritz.kiefer@purelyfunctional.org&quot;&gt;moritz.kiefer@purelyfunctional.org&lt;/a&gt;&lt;/p&gt;</content>
+    <author>
+      <name>moritzkiefer-da</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/u/45630097?s=60&amp;v=4"/>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/753306119/0.7.2</id>
+    <updated>2026-08-13T17:36:46+01:00</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/canton-network/splice/releases/tag/0.7.2"/>
+    <title>[release] Release 0.7.2 [ci] (#6782)</title>
+    <content type="html">&lt;p&gt;Signed-off-by: Julien Tinguely &lt;a href=&quot;mailto:julien.tinguely@digitalasset.com&quot;&gt;julien.tinguely@digitalasset.com&lt;/a&gt;&lt;/p&gt;</content>
+    <author>
+      <name>julientinguely-da</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/u/128390688?s=60&amp;v=4"/>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/753306119/0.7.1</id>
+    <updated>2026-08-07T17:40:01+01:00</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/canton-network/splice/releases/tag/0.7.1"/>
+    <title>Release 0.7.1 (#6724)</title>
+    <content type="html">&lt;p&gt;[ci]&lt;/p&gt;
+&lt;p&gt;Signed-off-by: Pasindu Tennage &lt;a href=&quot;mailto:pasindu.tennage@digitalasset.com&quot;&gt;pasindu.tennage@digitalasset.com&lt;/a&gt;&lt;br&gt;
+Signed-off-by: pasindutennage-da &lt;a href=&quot;mailto:pasindu.tennage@digitalasset.com&quot;&gt;pasindu.tennage@digitalasset.com&lt;/a&gt;&lt;/p&gt;</content>
+    <author>
+      <name>pasindutennage-da</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/u/235660759?s=60&amp;v=4"/>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/753306119/0.7.0</id>
+    <updated>2026-07-30T18:19:08+01:00</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/canton-network/splice/releases/tag/0.7.0"/>
+    <title>[release] Release 0.7.0 (#6623)</title>
+    <content type="html">&lt;p&gt;[static]&lt;/p&gt;
+&lt;p&gt;Signed-off-by: &lt;a href=&quot;mailto:moritz.kiefer@digitalasset.com&quot;&gt;moritz.kiefer@digitalasset.com&lt;/a&gt; &lt;a href=&quot;mailto:moritz.kiefer@purelyfunctional.org&quot;&gt;moritz.kiefer@purelyfunctional.org&lt;/a&gt;&lt;br&gt;
+Co-authored-by: &lt;a href=&quot;mailto:moritz.kiefer@digitalasset.com&quot;&gt;moritz.kiefer@digitalasset.com&lt;/a&gt; &lt;a href=&quot;mailto:moritz.kiefer@purelyfunctional.org&quot;&gt;moritz.kiefer@purelyfunctional.org&lt;/a&gt;&lt;/p&gt;</content>
+    <author>
+      <name>moritzkiefer-da</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/u/45630097?s=60&amp;v=4"/>
+  </entry>
+</feed>

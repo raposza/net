@@ -79,6 +79,19 @@
       "enabled": true
     },
     {
+      "id": "splice-release-notes",
+      "publisher": "Splice project",
+      "transport": "http",
+      "url": "https://github.com/canton-network/splice/releases.atom",
+      "branch": null,
+      "pathPrefix": null,
+      "sourceAuthority": "OFFICIAL_PROJECT",
+      "claimPolicy": "software-release-notes",
+      "pollSeconds": 900,
+      "includePreReleases": true,
+      "enabled": true
+    },
+    {
       "id": "splice-tags",
       "publisher": "Splice project",
       "transport": "http",

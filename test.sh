@@ -17,6 +17,9 @@ trap 'if [ -n "$pidApi" ]; then kill "$pidApi" 2>/dev/null || true; fi; rm -rf "
 port=$(( 31000 + (RANDOM % 900) ))
 fail=0
 
+# The index is brought into existence first, so a publication that finds it
+# empty is distinguishable from one that could not read it at all.
+FEED_DB_DIR="$work/db" FEED_EVIDENCE_DIR="$work/evidence" FEED_JOURNAL_DIR="$work/journal" java -jar "$jar" rebuild
 FEED_DATASET_DIR="$work/dataset" FEED_DB_DIR="$work/db" java -jar "$jar" replay
 
 FEED_HTTP_PORT="$port" \
@@ -47,12 +50,22 @@ chk() {
 }
 
 chk status   /api/v1/status                       '"publicationId"'
+chk content  /api/v1/status                       'EMPTY'
 chk networks /api/v1/networks                     '"MAINNET"'
-chk mainnet  /api/v1/networks/mainnet             '"currentVersion"'
-chk events   /api/v1/events                       'NETWORK_UPGRADE_PLANNED'
-chk event    /api/v1/events/evt_mainnet_2026w39   '"WEEKLY_UPGRADE"'
+chk mainnet  /api/v1/networks/mainnet             'scheduledVersion'
+chk events   /api/v1/events                       '"events"'
 chk sources  /api/v1/sources                      'canton-foundation-cips'
 chk webpage  /index.html                          'Raposza'
+
+# Nothing observes what a network runs, and nothing reports a synchronizer, so
+# neither may reappear in a published network however plausible the field looks.
+if curl -sf "http://127.0.0.1:$port/api/v1/networks" -o "$work/networks.json" \
+    && ! grep -qE '"(synchronizer|currentVersion)"' "$work/networks.json"; then
+  echo "ok   networks claim nothing that is not observed"
+else
+  echo "FAIL /api/v1/networks carries a running version or a synchronizer"
+  fail=1
+fi
 
 # The published source list is the registry this build carries. A source id that
 # is not in sources.json must not appear, however plausible it looks.

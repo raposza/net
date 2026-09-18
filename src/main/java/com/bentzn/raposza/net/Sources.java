@@ -127,6 +127,7 @@ public final class Sources {
                     "id", def.id(),
                     "publisher", def.publisher(),
                     "authority", def.sourceAuthority(),
+                    "pollSeconds", Integer.valueOf(def.pollSeconds()),
                     "enabled", Boolean.valueOf(def.enabled()),
                     "state", arrLive == null ? "UNKNOWN" : arrLive[0],
                     "lastSuccessAt", stampLast == null ? null : Dataset.iso(stampLast.toInstant())));

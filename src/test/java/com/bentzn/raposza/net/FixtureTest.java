@@ -37,7 +37,7 @@ class FixtureTest {
 
     static final Path DIR_FIXTURES = Path.of("fixtures");
 
-    private static final String SUFFIX_BODY = ".json";
+    private static final List<String> LST_SUFFIX_BODY = List.of(".json", ".atom");
 
     private static final String SUFFIX_CLAIMS = ".claims.jsonl";
 
@@ -57,7 +57,7 @@ class FixtureTest {
             assertNotNull(norm, "fixtures for " + idSource + " but no normalizer reads that source");
             for (Path fileBody : bodies(idSource)) {
                 String nameBody = fileBody.getFileName().toString();
-                String stem = nameBody.substring(0, nameBody.length() - SUFFIX_BODY.length());
+                String stem = nameBody.substring(0, nameBody.lastIndexOf('.'));
                 byte[] bytesBody = Files.readAllBytes(fileBody);
                 assertEquals("sha256/" + stem, Evidence.key(bytesBody), nameBody + " is not the body its name addresses");
                 String textGot = Claim.lines(norm.normalize(bytesBody));
@@ -107,8 +107,21 @@ class FixtureTest {
      */
     static List<Path> bodies(String idSource) throws IOException {
         try (Stream<Path> strm = Files.list(DIR_FIXTURES.resolve(idSource))) {
-            return strm.filter(fileOne -> fileOne.getFileName().toString().endsWith(SUFFIX_BODY)).sorted().toList();
+            return strm.filter(fileOne -> isBody(fileOne.getFileName().toString())).sorted().toList();
         }
+    }
+
+
+    /**
+     * @param nameFile a file name under a fixture directory
+     * @return true when it is a banked body rather than its expectation
+     */
+    private static boolean isBody(String nameFile) {
+        for (String nameSuffix : LST_SUFFIX_BODY) {
+            if (nameFile.endsWith(nameSuffix))
+                return true;
+        }
+        return false;
     }
 
 

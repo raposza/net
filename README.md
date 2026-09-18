@@ -5,15 +5,21 @@ A machine-readable feed of Canton Network operational state: what is deployed
 on DevNet, TestNet and MainNet, what is scheduled, whether it is confirmed, what
 changed since you last looked, and where every fact came from.
 
-What is real: the service collects. It polls its public sources on their own
+What is published: every value in the dataset, the api and the page is derived
+from banked evidence. The service polls its public sources on their own
 cadences, banks every retrieved body content-addressed beside a journal line per
-poll, and reads the SV operations schedule into claims, events, revisions and
-change records with provenance on each.
+poll, reads the SV operations schedule and the two Splice sources into claims,
+and derives one event per
+upstream record with revisions, change records and provenance on each. Those
+events are what is published, and the per-network summary is derived from them
+and from nothing else.
 
-What is not real yet: the publication. Nothing published is derived from those
-events, so the dataset, the api and the page still serve values written by hand.
-`metadata.content` is `PLACEHOLDER` in every publication until that changes, and
-nothing in it is a statement about any network.
+EVERY VERSION PUBLISHED IS SCHEDULED, NOT RUNNING. No source this feed reads
+reports what a network is currently running, so what you get is what the
+operators have said they intend to do, and a date that has arrived is not
+evidence that it happened. `metadata.content` states what a publication is made
+of: `OBSERVED` when the index was read and carried events, `EMPTY` when it
+carried none, `UNAVAILABLE` when it could not be read.
 
 ## Build and run
 

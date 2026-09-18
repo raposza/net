@@ -88,10 +88,14 @@ FEED_GIT_PUSH_INTERVAL          shortest interval in seconds between pushes of
 FEED_HEARTBEAT_SECONDS          heartbeat interval in seconds, default -1 which
                                 disables it; below the floor of 60 s it is also
                                 disabled and says so
+FEED_GITHUB_TOKEN               credential the release call authenticates with,
+                                needing contents write on the data repository;
+                                no default, and without it no Release is cut
 ```
 
-The git publication channel mirrors each publication into a repository of two
-files: the whole dataset as one json document, and a README that carries the
+The git publication channel mirrors each publication into a repository of three
+files: the whole dataset as one json document, four lines of it a person can
+read, and a README that carries the
 consumer contract because there is nowhere else for it to live. A commit is made
 only when the dataset moved, which is decided over a form of the document with
 the publication id and the creation stamp blanked - those move on every
@@ -101,6 +105,13 @@ its own: a repository that is correctly silent looks exactly like one whose
 writer has stopped, so the heartbeat commits a timestamp on a fixed interval and
 never touches the data branch. Failure to push is reported, retried on a later
 turn, and never blocks a publication.
+
+Releases are a separate act from a commit, and the only one a reader can
+subscribe to: GitHub lets a watcher follow releases, and offers nothing at all
+for commits or pushes. A push key cannot create one, which is why the release
+call carries its own credential. Nothing cuts a Release yet - what makes a
+publication worth announcing, and what the announcement says, both need a diff
+over published events, and nothing derives one.
 
 The api opens no database at all: it serves the published dataset directory and
 nothing else, which is what lets it and the worker run as separate services over
@@ -176,15 +187,20 @@ Splice is tracked by tags rather than by its releases endpoint.
 ## What is real here and what is not
 
 Collection is real: the git and http sources bank evidence, journal lines and
-index rows on their first run. One source is normalized: every banked body of
+Three sources are normalized: every banked body of
 the SV Operations Schedule is read into claims in the index, one set per typed
-record, keyed by the record's own id. From those claims the index derives one
+record, keyed by the record's own id; every banked body of the Splice tags
+endpoint and of its release-notes feed into one set per tag, keyed by the tag
+name, which is what joins the two. From those claims the index derives one
 event per record, with a revision and a change record for every banked body
 that moves one of its fields; a record that disappears is withdrawn, not
-cancelled, and a body re-sorted upstream changes nothing. Nothing publishes an
-event yet, so the dataset the api serves is still placeholder content written
-by hand with `metadata.content` set to `PLACEHOLDER` so a consumer can tell.
-The shape of the contract is real; the published values are not.
+cancelled, and a body re-sorted upstream changes nothing. Those events are what
+is published: the dataset, the api and the page carry them, and the per-network
+summary is derived from them and from nothing else. Nothing is written by hand.
+`metadata.content` states what a publication is made of - `OBSERVED` when the
+index was read and carried events, `EMPTY` when it carried none, `UNAVAILABLE`
+when it could not be read - so a consumer is never shown an empty table it
+cannot account for.
 
 Normalizers come after the corpus, not before it: each one is tested against
 real banked snapshots, never against fabricated fragments, so the snapshots have

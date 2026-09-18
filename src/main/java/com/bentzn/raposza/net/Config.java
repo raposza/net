@@ -268,6 +268,19 @@ public final class Config {
     }
 
 
+    /**
+     * The credential the release call authenticates with. A deploy key pushes
+     * commits and cannot create a Release; that is the REST API and needs a
+     * fine-grained credential with contents write on the data repository. There
+     * is no default: without it no Release is cut and the worker says so once.
+     *
+     * @return the value, or null when none is set
+     */
+    public static String githubToken() {
+        return optional("FEED_GITHUB_TOKEN");
+    }
+
+
     private static String env(String nameVar, String valDefault) {
         String valEnv = System.getenv(nameVar);
         return valEnv == null || valEnv.isBlank() ? valDefault : valEnv;

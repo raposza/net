@@ -26,11 +26,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * The published dataset: generation of a corpus, atomic write of the directory a
  * static server exposes, and read-back of that directory.
  *
- * The networks and the events are placeholder content: they carry the shape of
- * the contract and not observed facts, and every value in them was written by
- * hand. The source list is not placeholder. It is the registry the collector
- * actually runs on, with the state the index holds for each entry, so a reader
- * is never told about a source this build does not have.
+ * Nothing in it is written by hand. The events are the ones the index derived
+ * from banked bodies, the networks are derived from those events and from
+ * nothing else, and the source list is the registry this build carries with the
+ * state the index holds for each entry.
+ *
+ * What a publication is made of is stated in metadata.content, because an
+ * environment that has banked nothing and an environment whose index is broken
+ * both publish empty tables and a consumer must be able to tell them apart:
+ *
+ * <pre>
+ * OBSERVED     the index was read and carried events
+ * EMPTY        the index was read and carried none
+ * UNAVAILABLE  the index could not be read
+ * </pre>
  *
  * Author Claude/bentzn
  */
@@ -44,10 +53,19 @@ public final class Dataset {
     private static final DateTimeFormatter FMT_STAMP =
             DateTimeFormatter.ofPattern("uuuuMMdd'T'HHmmss'Z'").withZone(ZoneOffset.UTC);
 
-    private static final List<String> LST_NETWORK = List.of("devnet", "testnet", "mainnet");
-
 
     private Dataset() {
+    }
+
+
+    /**
+     * What one open connection to the index yielded, carried as one value so a
+     * publication reads the index once and never half of it.
+     *
+     * @param lstSource the source list with the state the index holds
+     * @param lstEvent the published events
+     */
+    public record Index(List<Object> lstSource, List<Object> lstEvent) {
     }
 
 
@@ -63,21 +81,21 @@ public final class Dataset {
     /**
      * @param idPublication identifier stamped into every record
      * @param instNow the moment of publication
-     * @param lstSource the source list as the index holds it, or null to fall back
-     *        to the registry this build carries
+     * @param idx what the index yielded, or null when it could not be read
      * @return the whole corpus: metadata, networks, events, sources
      */
-    public static Map<String, Object> generate(String idPublication, Instant instNow, List<Object> lstSource) {
+    public static Map<String, Object> generate(String idPublication, Instant instNow, Index idx) {
         String stampNow = FMT_ISO.format(instNow);
+        List<Object> lstEvent = idx == null || idx.lstEvent() == null ? List.of() : idx.lstEvent();
         Map<String, Object> mapDs = new LinkedHashMap<>();
         mapDs.put("metadata", map(
                 "publicationId", idPublication,
                 "createdAt", stampNow,
                 "generator", "raposza-network-feed",
-                "content", "PLACEHOLDER"));
-        mapDs.put("networks", networks(idPublication, stampNow));
-        mapDs.put("events", events(stampNow));
-        mapDs.put("sources", lstSource == null ? registry() : lstSource);
+                "content", idx == null ? "UNAVAILABLE" : lstEvent.isEmpty() ? "EMPTY" : "OBSERVED"));
+        mapDs.put("networks", Networks.derive(lstEvent, instNow, idPublication, stampNow));
+        mapDs.put("events", lstEvent);
+        mapDs.put("sources", idx == null || idx.lstSource() == null ? registry() : idx.lstSource());
         return mapDs;
     }
 
@@ -143,8 +161,9 @@ public final class Dataset {
                 return null;
             }
             List<Object> lstNetwork = new ArrayList<>();
-            for (String idNetwork : LST_NETWORK) {
-                Map<String, Object> mapNetwork = readJson(dirAbs.resolve("networks").resolve(idNetwork + ".json"));
+            for (String nameNetwork : Networks.LST_NETWORK) {
+                Map<String, Object> mapNetwork = readJson(dirAbs.resolve("networks")
+                        .resolve(nameNetwork.toLowerCase(Locale.ROOT) + ".json"));
                 if (mapNetwork == null) {
                     return null;
                 }
@@ -189,75 +208,6 @@ public final class Dataset {
     }
 
 
-    private static List<Object> networks(String idPublication, String stampNow) {
-        List<Object> lstOut = new ArrayList<>();
-        lstOut.add(map(
-                "network", "DEVNET",
-                "splice", map("currentVersion", "0.7.5", "minimumVersion", "0.7.4"),
-                "synchronizer", map("version", "0.7.5", "serialId", 6),
-                "nextEvent", "evt_devnet_2026w38",
-                "publicationId", idPublication,
-                "updatedAt", stampNow));
-        lstOut.add(map(
-                "network", "TESTNET",
-                "splice", map("currentVersion", "0.7.4", "minimumVersion", "0.7.3"),
-                "synchronizer", map("version", "0.7.4", "serialId", 5),
-                "nextEvent", "evt_testnet_2026w38",
-                "publicationId", idPublication,
-                "updatedAt", stampNow));
-        lstOut.add(map(
-                "network", "MAINNET",
-                "splice", map("currentVersion", "0.7.3", "minimumVersion", "0.7.2"),
-                "synchronizer", map("version", "0.7.3", "serialId", 5),
-                "nextEvent", "evt_mainnet_2026w39",
-                "publicationId", idPublication,
-                "updatedAt", stampNow));
-        return lstOut;
-    }
-
-
-    private static List<Object> events(String stampNow) {
-        List<Object> lstOut = new ArrayList<>();
-        lstOut.add(event("evt_devnet_2026w38", "NETWORK_UPGRADE_PLANNED", "DEVNET",
-                "WEEKLY_UPGRADE", "2026-W38", "0.7.6", "CONFIRMED",
-                "2026-09-15T13:00:00Z", "TIMESTAMP", stampNow));
-        lstOut.add(event("evt_testnet_2026w38", "NETWORK_UPGRADE_PLANNED", "TESTNET",
-                "WEEKLY_UPGRADE", "2026-W38", "0.7.5", "PLANNED",
-                "2026-09-17", "DATE", stampNow));
-        lstOut.add(event("evt_mainnet_2026w39", "NETWORK_UPGRADE_PLANNED", "MAINNET",
-                "WEEKLY_UPGRADE", "2026-W39", null, "TENTATIVE",
-                "2026-09-22", "DATE", stampNow));
-        lstOut.add(event("evt_mainnet_minver_2026w39", "MINIMUM_SPLICE_VERSION_CHANGED", "MAINNET",
-                "MINIMUM_VERSION", "2026-W39", "0.7.3", "PLANNED",
-                "2026-09-22", "DATE", stampNow));
-        return lstOut;
-    }
-
-
-    private static Map<String, Object> event(String idEvent, String typeEvent, String nameNetwork,
-            String kindSlot, String periodSlot, String verSubject, String nameStatus,
-            String stampFrom, String namePrecision, String stampNow) {
-        return map(
-                "id", idEvent,
-                "schemaVersion", 1,
-                "type", typeEvent,
-                "network", nameNetwork,
-                "slot", map("kind", kindSlot, "period", periodSlot),
-                "subject", map("type", "SPLICE", "version", verSubject),
-                "status", nameStatus,
-                "effective", map("from", stampFrom, "precision", namePrecision),
-                "authority", "OFFICIAL",
-                "confidence", "HIGH",
-                "firstObservedAt", stampNow,
-                "lastObservedAt", stampNow,
-                "revision", 1,
-                "provenance", List.of(map(
-                        "sourceId", "canton-foundation-sv-operations-schedule",
-                        "observationId", "obs_placeholder",
-                        "normalizer", "none")));
-    }
-
-
     /**
      * The source list as the registry alone describes it, used when no index is
      * open: the api falls back to this before the first publication exists, and
@@ -271,6 +221,7 @@ public final class Dataset {
                         "id", def.id(),
                         "publisher", def.publisher(),
                         "authority", def.sourceAuthority(),
+                        "pollSeconds", Integer.valueOf(def.pollSeconds()),
                         "enabled", Boolean.valueOf(def.enabled()),
                         "state", "UNKNOWN",
                         "lastSuccessAt", null));

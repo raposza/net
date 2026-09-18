@@ -152,6 +152,12 @@ code {
   color: var(--warn);
 }
 
+.tag-CANCELLED {
+  border-color: var(--muted);
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
 .tag-CONFLICTED,
 .tag-REQUIRES_REVIEW {
   border-color: var(--accent);

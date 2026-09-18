@@ -9,8 +9,17 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -58,6 +67,9 @@ public final class GitPublish {
     /** The consumer contract. */
     public static final String NAME_README = "README.md";
 
+    /** The same facts as the dataset, in four lines a person reads. */
+    public static final String NAME_VERSIONS = "versions.txt";
+
     /** The liveness file, on the heartbeat branch only. */
     public static final String NAME_BEAT = "heartbeat.json";
 
@@ -69,7 +81,14 @@ public final class GitPublish {
      */
     public static final int SEC_BEAT_FLOOR = 60;
 
+    private static final DateTimeFormatter FMT_DAY =
+            DateTimeFormatter.ofPattern("uuuu-MM-dd").withZone(ZoneOffset.UTC);
+
     private static final long SEC_TIMEOUT = 600L;
+
+    /** When this process started; the heartbeat reports the span since. */
+    private static final Instant INST_START =
+            ProcessHandle.current().info().startInstant().orElseGet(Instant::now);
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -179,6 +198,8 @@ public final class GitPublish {
         if (!same(fileArtefact, bytesNew)) {
             Files.write(fileArtefact, bytesNew);
             Files.write(dirTree.resolve(NAME_README), readme(mapDs).getBytes(StandardCharsets.UTF_8));
+            Files.write(dirTree.resolve(NAME_VERSIONS),
+                    Versions.text(mapDs).getBytes(StandardCharsets.UTF_8));
             must(dirTree, "git", "add", "-A");
             if (exec(dirTree, "git", "diff", "--cached", "--quiet").code() != 0) {
                 must(dirTree, "git", "commit", "-q", "-m", "publication " + idOf(mapDs));
@@ -211,6 +232,7 @@ public final class GitPublish {
                 "checkedAt", Dataset.iso(Instant.ofEpochMilli(msNow)),
                 "environment", spec.nameEnvironment(),
                 "publicationId", idOf(mapDs),
+                "uptimeHours", Double.valueOf(uptimeHours()),
                 "note", "liveness only: this branch carries no data and no history worth reading");
         Files.write(dirTree.resolve(NAME_BEAT), json(mapBeat));
         must(dirTree, "git", "add", "-A");
@@ -348,6 +370,20 @@ public final class GitPublish {
     }
 
 
+    /**
+     * How long this process has been up, in hours to two places. The moment is
+     * the operating system's process start where it gives one, so a class that
+     * happened to load late cannot hide a restart; otherwise it is when this
+     * class was loaded, which is within seconds of it.
+     *
+     * @return the uptime in hours
+     */
+    private static double uptimeHours() {
+        long secUp = Duration.between(INST_START, Instant.now()).toSeconds();
+        return Math.round(secUp / 36.0) / 100.0;
+    }
+
+
     private static String idOf(Map<String, Object> mapDs) {
         return String.valueOf(Dataset.meta(mapDs).get("publicationId"));
     }
@@ -369,8 +405,14 @@ public final class GitPublish {
      * @return the README text
      */
     private String readme(Map<String, Object> mapDs) {
-        StringBuilder sbOut = new StringBuilder(4096);
+        StringBuilder sbOut = new StringBuilder(8192);
         sbOut.append("# Raposza Network Operations Feed - data\n\n");
+        sbOut.append("BaseNet can be wired to this feed with a cron job, so that a local\n");
+        sbOut.append("customization is tested against what the networks are scheduled to run\n");
+        sbOut.append("before it becomes a problem. Pull `").append(NAME_VERSIONS).append("` or `")
+                .append(NAME_ARTEFACT).append("` on a schedule, compare it\n");
+        sbOut.append("with what your own environment is pinned to, and fail your build when the\n");
+        sbOut.append("two have drifted apart. This is a data feed, not a dashboard.\n\n");
         sbOut.append("Machine-generated. Nothing in this repository is edited by hand, and a wrong\n");
         sbOut.append("publication is corrected by a further publication, never by rewriting history.\n\n");
         sbOut.append("Environment: ").append(spec.nameEnvironment()).append(".\n");
@@ -380,20 +422,45 @@ public final class GitPublish {
         }
         sbOut.append("\n## Files\n\n");
         sbOut.append("- `").append(NAME_ARTEFACT).append("` - the published dataset, one document.\n");
+        sbOut.append("- `").append(NAME_VERSIONS).append("` - the same facts for a person, four lines.\n");
         sbOut.append("- `").append(NAME_README).append("` - this file.\n");
-        sbOut.append("\n## What the versions mean\n\n");
-        sbOut.append("Every version here is SCHEDULED, not running. No source this feed reads reports\n");
-        sbOut.append("what a network is currently running; what is published is what the operators\n");
-        sbOut.append("have said they intend to do, and a schedule that has passed its date is not\n");
-        sbOut.append("evidence that it happened. Do not gate a deployment on a field in this file\n");
-        sbOut.append("without reading this paragraph again.\n");
+        sbOut.append("\n## Provenance\n\n");
+        sbOut.append("Where this comes from, how often, and how it is put together. No value here\n");
+        sbOut.append("is typed by a human.\n\n");
+        sbOut.append("The sources polled, each on its own cadence, as this publication carries\n");
+        sbOut.append("them:\n\n");
+        sources(sbOut, mapDs);
+        sbOut.append("\nEvery retrieved body is stored content-addressed by its sha256 and never\n");
+        sbOut.append("overwritten, beside one journal line per attempt recording when the attempt\n");
+        sbOut.append("ran and what it found. An identical body is not stored twice, and an attempt\n");
+        sbOut.append("that retrieved nothing still leaves a line, so a source that is quiet and a\n");
+        sbOut.append("poller that has stopped are different things in the record.\n\n");
+        sbOut.append("Two sources are read into records. Each typed record of the SV Operations\n");
+        sbOut.append("Schedule becomes one event, keyed by the record's own upstream id; each tag\n");
+        sbOut.append("of the Splice repository becomes one event, keyed by the tag name. Every\n");
+        sbOut.append("later body that moves a field of one of those records makes a revision and a\n");
+        sbOut.append("change record. A record that disappears from a later body is marked\n");
+        sbOut.append("withdrawn rather than cancelled, because upstream marks a cancellation and\n");
+        sbOut.append("keeps the record, and a body that upstream merely re-sorted changes nothing.\n");
+        sbOut.append("Every published event names the source, the observation and the normalizer it\n");
+        sbOut.append("came from.\n\n");
+        sbOut.append("EVERY NETWORK VERSION HERE IS SCHEDULED, NOT RUNNING. No source this feed\n");
+        sbOut.append("reads reports what a network is currently running, so what you get is what\n");
+        sbOut.append("the operators have said they intend to do, and a date that has arrived is not\n");
+        sbOut.append("evidence that it happened. Per network, `").append(NAME_VERSIONS)
+                .append("` shows the latest\n");
+        sbOut.append("scheduled version whose date has arrived and the minimum version in force;\n");
+        sbOut.append("the minimum is often stated upstream to a minor version only, so `0.7` there\n");
+        sbOut.append("means `0.7.x`. The last line is different in kind: it is the highest version\n");
+        sbOut.append("the tags endpoint carries, which says a release EXISTS and says nothing about\n");
+        sbOut.append("any network taking it. A tag carries no date, so these records have none.\n");
         sbOut.append("\n## Stability\n\n");
-        sbOut.append("Nothing is promised before version 1.0.0: not the file name, not the field\n");
-        sbOut.append("names, not the shape, and not the MEANING of a field. A change of meaning is\n");
-        sbOut.append("the dangerous one, because it breaks no parser and every decision made from\n");
-        sbOut.append("one. `metadata.content` states what the values in this file are; while it\n");
-        sbOut.append("reads PLACEHOLDER they carry the shape of the contract and not observed\n");
-        sbOut.append("facts.\n");
+        sbOut.append("The Canton networks are still evolving fast. We try our best to keep the\n");
+        sbOut.append("interface and the schema stable and coherent, but if something changes\n");
+        sbOut.append("upstream we may have to change them too.\n\n");
+        sbOut.append("`metadata.content` states what the values in this file are: OBSERVED when\n");
+        sbOut.append("they were derived from banked observations, EMPTY when this environment has\n");
+        sbOut.append("banked none, and UNAVAILABLE when the index could not be read.\n");
         sbOut.append("\n## Freshness\n\n");
         sbOut.append("`metadata.publicationId` and `metadata.createdAt` identify the publication.\n");
         sbOut.append("They move on every publication, so this repository is committed only when the\n");
@@ -401,14 +468,194 @@ public final class GitPublish {
         sbOut.append("stamps you read are those of the last change, not of the last check.\n");
         sbOut.append("\n## Branches\n\n");
         sbOut.append("- `").append(spec.nameBranchData()).append("` - the data. One commit per real change, never rewritten.\n");
-        sbOut.append("- `").append(spec.nameBranchBeat()).append("` - liveness only. A timestamp, committed on a fixed interval\n");
-        sbOut.append("  whether anything changed or not, so that a silent data branch can be told\n");
-        sbOut.append("  apart from a writer that has stopped. It carries no data. Read nothing into\n");
-        sbOut.append("  its contents beyond the fact that the writer was alive at that moment.\n");
+        sbOut.append("- `").append(spec.nameBranchBeat()).append("` - liveness only. A timestamp and the publisher's uptime in\n");
+        sbOut.append("  hours, committed on a fixed interval whether anything changed or not, so\n");
+        sbOut.append("  that a silent data branch can be told apart from a writer that has stopped.\n");
+        sbOut.append("  It carries no data. Read nothing into its contents beyond the fact that the\n");
+        sbOut.append("  writer was alive at that moment.\n");
         sbOut.append("\n## Content of this publication\n\n");
         sbOut.append("`metadata.content` is `").append(String.valueOf(Dataset.meta(mapDs).get("content")))
                 .append("`.\n");
         return sbOut.toString();
+    }
+
+
+    /**
+     * The source list of the publication itself, so the cadences stated here are
+     * the ones the build actually runs on and cannot drift from the registry.
+     *
+     * @param sbOut the README being built
+     * @param mapDs the corpus being committed
+     */
+    private static void sources(StringBuilder sbOut, Map<String, Object> mapDs) {
+        Object objList = mapDs.get("sources");
+        int cntListed = 0;
+        if (objList instanceof List) {
+            for (Object objOne : (List<?>) objList) {
+                if (!(objOne instanceof Map))
+                    continue;
+                Map<?, ?> mapOne = (Map<?, ?>) objOne;
+                sbOut.append("- `").append(mapOne.get("id")).append("` - ").append(mapOne.get("publisher"))
+                        .append(", authority ").append(mapOne.get("authority"))
+                        .append(", polled every ").append(mapOne.get("pollSeconds")).append(" s\n");
+                cntListed++;
+            }
+        }
+        if (cntListed == 0) {
+            sbOut.append("- this publication carries no source list\n");
+        }
+    }
+
+
+    /**
+     * Cuts a Release on the data repository. Releases are the only subscription
+     * a stranger can register for by themselves, so this is the whole announce
+     * path; a commit announces nothing to anyone.
+     *
+     * NOT CALLED YET. What decides that a publication deserves a Release, and
+     * what the title says, both need a diff over published events, which
+     * nothing produces. This is the transport waiting for that caller.
+     *
+     * @param nameTag the tag to create, from nextTag
+     * @param titleRelease the one-line subject a subscriber sees in their inbox
+     * @param textBody the release body, which may be empty
+     * @return true when GitHub created it
+     */
+    public boolean release(String nameTag, String titleRelease, String textBody) {
+        String tokenGh = Config.githubToken();
+        if (tokenGh == null) {
+            System.err.println("git publication: no release credential is set, so no Release was cut for "
+                    + nameTag);
+            return false;
+        }
+        String slugRepo = slug(spec.urlRemote());
+        if (slugRepo == null) {
+            System.err.println("git publication: cannot read owner and repository from " + spec.urlRemote());
+            return false;
+        }
+        try {
+            Map<String, Object> mapReq = Dataset.map(
+                    "tag_name", nameTag,
+                    "target_commitish", spec.nameBranchData(),
+                    "name", titleRelease,
+                    "body", textBody == null ? "" : textBody,
+                    "draft", Boolean.FALSE,
+                    "prerelease", Boolean.FALSE,
+                    "generate_release_notes", Boolean.FALSE,
+                    "make_latest", "true");
+            HttpRequest reqPost = HttpRequest
+                    .newBuilder(URI.create("https://api.github.com/repos/" + slugRepo + "/releases"))
+                    .header("Accept", "application/vnd.github+json")
+                    .header("Authorization", "Bearer " + tokenGh)
+                    .header("X-GitHub-Api-Version", "2026-03-10")
+                    .header("Content-Type", "application/json")
+                    .timeout(Duration.ofSeconds(30L))
+                    .POST(HttpRequest.BodyPublishers.ofString(MAPPER.writeValueAsString(mapReq),
+                            StandardCharsets.UTF_8))
+                    .build();
+            HttpResponse<String> respPost = HttpClient.newHttpClient().send(reqPost,
+                    HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            if (respPost.statusCode() != 201) {
+                System.err.println("git publication: release " + nameTag + " refused with "
+                        + respPost.statusCode() + ": " + respPost.body());
+                return false;
+            }
+            System.out.println("git publication: released " + nameTag);
+            return true;
+        }
+        catch (IOException | RuntimeException e) {
+            System.err.println("git publication: release " + nameTag + " failed: " + e);
+            return false;
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
+        }
+    }
+
+
+    /**
+     * The tag naming. A date rather than a version, because the repository is a
+     * dataset and a version-shaped tag invites a consumer to read compatibility
+     * into it; a suffix only where a day carries more than one.
+     *
+     * @param instNow the moment of the release
+     * @param collTaken the tags the repository already holds
+     * @return the first free tag for that day
+     */
+    public static String nextTag(Instant instNow, Collection<String> collTaken) {
+        String nameBase = "v" + FMT_DAY.format(instNow);
+        if (!collTaken.contains(nameBase))
+            return nameBase;
+        int cntTry = 2;
+        while (collTaken.contains(nameBase + "." + cntTry)) {
+            cntTry++;
+        }
+        return nameBase + "." + cntTry;
+    }
+
+
+    /**
+     * @param dirTree a working clone
+     * @return the tag names the remote holds, empty when it cannot be asked
+     */
+    public List<String> tagsRemote(Path dirTree) {
+        List<String> lstTag = new ArrayList<>();
+        try {
+            Exec execLs = exec(dirTree, "git", "ls-remote", "--tags", "origin");
+            if (execLs.code() != 0) {
+                System.err.println("git publication: cannot list tags: " + execLs.textErr().trim());
+                return lstTag;
+            }
+            for (String lineRef : text(execLs).split("\n")) {
+                int posRef = lineRef.indexOf("refs/tags/");
+                if (posRef < 0) {
+                    continue;
+                }
+                String nameTag = lineRef.substring(posRef + "refs/tags/".length()).trim();
+                if (!nameTag.endsWith("^{}")) {
+                    lstTag.add(nameTag);
+                }
+            }
+        }
+        catch (IOException | RuntimeException e) {
+            System.err.println("git publication: cannot list tags: " + e);
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        return lstTag;
+    }
+
+
+    /**
+     * Reads owner and repository out of the remote, for the REST call. Both the
+     * scp-like and the url forms are accepted, since either can appear in an
+     * environment file.
+     *
+     * @param urlRemote the remote as configured
+     * @return "owner/repo", or null when the remote is not a github remote
+     */
+    static String slug(String urlRemote) {
+        if (urlRemote == null)
+            return null;
+        String textCut = urlRemote.trim();
+        int posHost = textCut.indexOf("github.com");
+        if (posHost < 0)
+            return null;
+        textCut = textCut.substring(posHost + "github.com".length());
+        if (textCut.startsWith(":") || textCut.startsWith("/")) {
+            textCut = textCut.substring(1);
+        }
+        if (textCut.endsWith(".git")) {
+            textCut = textCut.substring(0, textCut.length() - ".git".length());
+        }
+        while (textCut.endsWith("/")) {
+            textCut = textCut.substring(0, textCut.length() - 1);
+        }
+        return textCut.chars().filter(chOne -> chOne == '/').count() == 1 && !textCut.startsWith("/")
+                ? textCut
+                : null;
     }
 
 

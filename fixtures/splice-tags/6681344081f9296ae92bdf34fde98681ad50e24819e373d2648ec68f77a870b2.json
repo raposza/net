@@ -1,0 +1,712 @@
+[
+  {
+    "name": "next-cilr",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/next-cilr",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/next-cilr",
+    "commit": {
+      "sha": "15a2efd329cede1f86cc075c708675cb05d4983b",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/15a2efd329cede1f86cc075c708675cb05d4983b"
+    },
+    "node_id": "REF_kwDOLOaKB7NyZWZzL3RhZ3MvbmV4dC1jaWxy"
+  },
+  {
+    "name": "0.8.3",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.8.3",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.8.3",
+    "commit": {
+      "sha": "8460154135f39019b8bb370c9c1321ff13c9bb10",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/8460154135f39019b8bb370c9c1321ff13c9bb10"
+    },
+    "node_id": "REF_kwDOLOaKB69yZWZzL3RhZ3MvMC44LjM"
+  },
+  {
+    "name": "0.8.2",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.8.2",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.8.2",
+    "commit": {
+      "sha": "5aa19e762495ff6040101abb21c4eac6f5142b2a",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/5aa19e762495ff6040101abb21c4eac6f5142b2a"
+    },
+    "node_id": "REF_kwDOLOaKB69yZWZzL3RhZ3MvMC44LjI"
+  },
+  {
+    "name": "0.8.1",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.8.1",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.8.1",
+    "commit": {
+      "sha": "fb3c8c8a9259e98cdeb1cffc0cc77eaa7cc69e52",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/fb3c8c8a9259e98cdeb1cffc0cc77eaa7cc69e52"
+    },
+    "node_id": "REF_kwDOLOaKB69yZWZzL3RhZ3MvMC44LjE"
+  },
+  {
+    "name": "0.8.0",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.8.0",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.8.0",
+    "commit": {
+      "sha": "9330dba9e31b8893bec09ece2f5dbb496fcf17b5",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/9330dba9e31b8893bec09ece2f5dbb496fcf17b5"
+    },
+    "node_id": "REF_kwDOLOaKB69yZWZzL3RhZ3MvMC44LjA"
+  },
+  {
+    "name": "0.7.5",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.7.5",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.7.5",
+    "commit": {
+      "sha": "858a7347aaeb958657b76b0957186102b74e3bd6",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/858a7347aaeb958657b76b0957186102b74e3bd6"
+    },
+    "node_id": "REF_kwDOLOaKB69yZWZzL3RhZ3MvMC43LjU"
+  },
+  {
+    "name": "0.7.4",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.7.4",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.7.4",
+    "commit": {
+      "sha": "e5c3661e7257a024b9f964617fa3f02dcf56d332",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/e5c3661e7257a024b9f964617fa3f02dcf56d332"
+    },
+    "node_id": "REF_kwDOLOaKB69yZWZzL3RhZ3MvMC43LjQ"
+  },
+  {
+    "name": "0.7.3",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.7.3",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.7.3",
+    "commit": {
+      "sha": "0dd6b9263510007e831bcc3ca3a44a41aa862a75",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/0dd6b9263510007e831bcc3ca3a44a41aa862a75"
+    },
+    "node_id": "REF_kwDOLOaKB69yZWZzL3RhZ3MvMC43LjM"
+  },
+  {
+    "name": "0.7.2",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.7.2",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.7.2",
+    "commit": {
+      "sha": "b1c3896fb9420d8de48537211a5c7046359c6d4e",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/b1c3896fb9420d8de48537211a5c7046359c6d4e"
+    },
+    "node_id": "REF_kwDOLOaKB69yZWZzL3RhZ3MvMC43LjI"
+  },
+  {
+    "name": "0.7.1",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.7.1",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.7.1",
+    "commit": {
+      "sha": "c95e1ef5c939cef13cc344d7678f9d2ce2474c6a",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/c95e1ef5c939cef13cc344d7678f9d2ce2474c6a"
+    },
+    "node_id": "REF_kwDOLOaKB69yZWZzL3RhZ3MvMC43LjE"
+  },
+  {
+    "name": "0.7.0",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.7.0",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.7.0",
+    "commit": {
+      "sha": "a9076eb91f87a9bd9315d2f9e122d6350bdc9d4c",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/a9076eb91f87a9bd9315d2f9e122d6350bdc9d4c"
+    },
+    "node_id": "REF_kwDOLOaKB69yZWZzL3RhZ3MvMC43LjA"
+  },
+  {
+    "name": "0.6.14",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.6.14",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.6.14",
+    "commit": {
+      "sha": "398919a5b13479877fd61587003ba7a4ba00091b",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/398919a5b13479877fd61587003ba7a4ba00091b"
+    },
+    "node_id": "REF_kwDOLOaKB7ByZWZzL3RhZ3MvMC42LjE0"
+  },
+  {
+    "name": "0.6.13",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.6.13",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.6.13",
+    "commit": {
+      "sha": "52ccdd6841f3eda11fe86313e8cdf9540efedfb7",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/52ccdd6841f3eda11fe86313e8cdf9540efedfb7"
+    },
+    "node_id": "REF_kwDOLOaKB7ByZWZzL3RhZ3MvMC42LjEz"
+  },
+  {
+    "name": "0.6.12",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.6.12",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.6.12",
+    "commit": {
+      "sha": "17fd29aad170e8f20074aa64624c4506177ea7bd",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/17fd29aad170e8f20074aa64624c4506177ea7bd"
+    },
+    "node_id": "REF_kwDOLOaKB7ByZWZzL3RhZ3MvMC42LjEy"
+  },
+  {
+    "name": "0.6.11",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.6.11",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.6.11",
+    "commit": {
+      "sha": "fd93f86ac42ce3a08985dcd0baae530b4f235f60",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/fd93f86ac42ce3a08985dcd0baae530b4f235f60"
+    },
+    "node_id": "REF_kwDOLOaKB7ByZWZzL3RhZ3MvMC42LjEx"
+  },
+  {
+    "name": "0.6.10",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.6.10",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.6.10",
+    "commit": {
+      "sha": "63cfb340ce0f8f254386d2d5df58905d695de902",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/63cfb340ce0f8f254386d2d5df58905d695de902"
+    },
+    "node_id": "REF_kwDOLOaKB7ByZWZzL3RhZ3MvMC42LjEw"
+  },
+  {
+    "name": "0.6.9",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.6.9",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.6.9",
+    "commit": {
+      "sha": "bc6a3587e7ea94230ba0c36c638945282c52b304",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/bc6a3587e7ea94230ba0c36c638945282c52b304"
+    },
+    "node_id": "REF_kwDOLOaKB69yZWZzL3RhZ3MvMC42Ljk"
+  },
+  {
+    "name": "0.6.8",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.6.8",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.6.8",
+    "commit": {
+      "sha": "61a536092435aed2fabda60f0bad75b2c626d312",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/61a536092435aed2fabda60f0bad75b2c626d312"
+    },
+    "node_id": "REF_kwDOLOaKB69yZWZzL3RhZ3MvMC42Ljg"
+  },
+  {
+    "name": "0.6.7",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.6.7",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.6.7",
+    "commit": {
+      "sha": "c8d8d977794c514ed2ee9eb64de322a6779898f3",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/c8d8d977794c514ed2ee9eb64de322a6779898f3"
+    },
+    "node_id": "REF_kwDOLOaKB69yZWZzL3RhZ3MvMC42Ljc"
+  },
+  {
+    "name": "0.6.6",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.6.6",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.6.6",
+    "commit": {
+      "sha": "995ec496fcf99346a7e7a1137f225a62e107b704",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/995ec496fcf99346a7e7a1137f225a62e107b704"
+    },
+    "node_id": "REF_kwDOLOaKB69yZWZzL3RhZ3MvMC42LjY"
+  },
+  {
+    "name": "0.6.5",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.6.5",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.6.5",
+    "commit": {
+      "sha": "8a844fc8c19dcd7f53f7fbfee7f4a08e3ecd40a9",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/8a844fc8c19dcd7f53f7fbfee7f4a08e3ecd40a9"
+    },
+    "node_id": "REF_kwDOLOaKB69yZWZzL3RhZ3MvMC42LjU"
+  },
+  {
+    "name": "0.6.4",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.6.4",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.6.4",
+    "commit": {
+      "sha": "578b7822d62947763a48334d556aefebc7ffacec",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/578b7822d62947763a48334d556aefebc7ffacec"
+    },
+    "node_id": "REF_kwDOLOaKB69yZWZzL3RhZ3MvMC42LjQ"
+  },
+  {
+    "name": "0.6.3",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.6.3",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.6.3",
+    "commit": {
+      "sha": "6d50c039641736b6df5358af2b1fc6c123f28e18",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/6d50c039641736b6df5358af2b1fc6c123f28e18"
+    },
+    "node_id": "REF_kwDOLOaKB69yZWZzL3RhZ3MvMC42LjM"
+  },
+  {
+    "name": "0.6.2",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.6.2",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.6.2",
+    "commit": {
+      "sha": "29255dcdfe96649dbffcec00fee69ae43e0b7f46",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/29255dcdfe96649dbffcec00fee69ae43e0b7f46"
+    },
+    "node_id": "REF_kwDOLOaKB69yZWZzL3RhZ3MvMC42LjI"
+  },
+  {
+    "name": "0.6.1",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.6.1",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.6.1",
+    "commit": {
+      "sha": "f9d605c84498384ec2d5138d62af2f40b14882ff",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/f9d605c84498384ec2d5138d62af2f40b14882ff"
+    },
+    "node_id": "REF_kwDOLOaKB69yZWZzL3RhZ3MvMC42LjE"
+  },
+  {
+    "name": "0.6.0",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.6.0",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.6.0",
+    "commit": {
+      "sha": "9c06c8184b1ae35c8c3f49f4a158e235ca25fff8",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/9c06c8184b1ae35c8c3f49f4a158e235ca25fff8"
+    },
+    "node_id": "REF_kwDOLOaKB69yZWZzL3RhZ3MvMC42LjA"
+  },
+  {
+    "name": "0.5.18",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.5.18",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.5.18",
+    "commit": {
+      "sha": "b162650cd18df5b96dddeffd9bd48be5b2ff37d7",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/b162650cd18df5b96dddeffd9bd48be5b2ff37d7"
+    },
+    "node_id": "REF_kwDOLOaKB7ByZWZzL3RhZ3MvMC41LjE4"
+  },
+  {
+    "name": "0.5.17",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.5.17",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.5.17",
+    "commit": {
+      "sha": "c2a87b3edb929ee793189f469beb3b346a11dfa4",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/c2a87b3edb929ee793189f469beb3b346a11dfa4"
+    },
+    "node_id": "REF_kwDOLOaKB7ByZWZzL3RhZ3MvMC41LjE3"
+  },
+  {
+    "name": "0.5.16",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.5.16",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.5.16",
+    "commit": {
+      "sha": "22baff08a766cda47a71f1522876066b5e513ff5",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/22baff08a766cda47a71f1522876066b5e513ff5"
+    },
+    "node_id": "REF_kwDOLOaKB7ByZWZzL3RhZ3MvMC41LjE2"
+  },
+  {
+    "name": "0.5.15",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.5.15",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.5.15",
+    "commit": {
+      "sha": "8abc8c04b55ba5091d8c7f18338fbce6e0130a72",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/8abc8c04b55ba5091d8c7f18338fbce6e0130a72"
+    },
+    "node_id": "REF_kwDOLOaKB7ByZWZzL3RhZ3MvMC41LjE1"
+  },
+  {
+    "name": "0.5.14",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.5.14",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.5.14",
+    "commit": {
+      "sha": "87c73c3532bd7ef1e7d62ea649563ed44a002414",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/87c73c3532bd7ef1e7d62ea649563ed44a002414"
+    },
+    "node_id": "REF_kwDOLOaKB7ByZWZzL3RhZ3MvMC41LjE0"
+  },
+  {
+    "name": "0.5.13",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.5.13",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.5.13",
+    "commit": {
+      "sha": "f9b0cf2e747b2d389d8eabccd6a6e522eb37bc75",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/f9b0cf2e747b2d389d8eabccd6a6e522eb37bc75"
+    },
+    "node_id": "REF_kwDOLOaKB7ByZWZzL3RhZ3MvMC41LjEz"
+  },
+  {
+    "name": "0.5.12",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.5.12",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.5.12",
+    "commit": {
+      "sha": "4925b3e3e3cba1a3bf01560b2ca2fa39e85e10a0",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/4925b3e3e3cba1a3bf01560b2ca2fa39e85e10a0"
+    },
+    "node_id": "REF_kwDOLOaKB7ByZWZzL3RhZ3MvMC41LjEy"
+  },
+  {
+    "name": "0.5.11",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.5.11",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.5.11",
+    "commit": {
+      "sha": "2b9ebcff4d7b750f693e89a345873ff93601d40e",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/2b9ebcff4d7b750f693e89a345873ff93601d40e"
+    },
+    "node_id": "REF_kwDOLOaKB7ByZWZzL3RhZ3MvMC41LjEx"
+  },
+  {
+    "name": "0.5.10",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.5.10",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.5.10",
+    "commit": {
+      "sha": "2a9456cef72abcd9eec7bc5e68270ec04102be60",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/2a9456cef72abcd9eec7bc5e68270ec04102be60"
+    },
+    "node_id": "REF_kwDOLOaKB7ByZWZzL3RhZ3MvMC41LjEw"
+  },
+  {
+    "name": "0.5.9",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.5.9",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.5.9",
+    "commit": {
+      "sha": "bd08bc6988e1227051bbcc869e70051d3f60294e",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/bd08bc6988e1227051bbcc869e70051d3f60294e"
+    },
+    "node_id": "REF_kwDOLOaKB69yZWZzL3RhZ3MvMC41Ljk"
+  },
+  {
+    "name": "0.5.8",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.5.8",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.5.8",
+    "commit": {
+      "sha": "86b5df19a7b1b5ef807ae1850658e7ba0b9ccfd4",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/86b5df19a7b1b5ef807ae1850658e7ba0b9ccfd4"
+    },
+    "node_id": "REF_kwDOLOaKB69yZWZzL3RhZ3MvMC41Ljg"
+  },
+  {
+    "name": "0.5.7",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.5.7",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.5.7",
+    "commit": {
+      "sha": "6fa082ecad2c68b908f8b2ef7a9eb0d4bad64d93",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/6fa082ecad2c68b908f8b2ef7a9eb0d4bad64d93"
+    },
+    "node_id": "REF_kwDOLOaKB69yZWZzL3RhZ3MvMC41Ljc"
+  },
+  {
+    "name": "0.5.6",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.5.6",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.5.6",
+    "commit": {
+      "sha": "eee13bbc5f75ede8d99a03457bd14afa6bcb42be",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/eee13bbc5f75ede8d99a03457bd14afa6bcb42be"
+    },
+    "node_id": "REF_kwDOLOaKB69yZWZzL3RhZ3MvMC41LjY"
+  },
+  {
+    "name": "0.5.5",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.5.5",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.5.5",
+    "commit": {
+      "sha": "a26fa9ff0b4e54855c9a772b61c898d43f745518",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/a26fa9ff0b4e54855c9a772b61c898d43f745518"
+    },
+    "node_id": "REF_kwDOLOaKB69yZWZzL3RhZ3MvMC41LjU"
+  },
+  {
+    "name": "0.5.4",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.5.4",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.5.4",
+    "commit": {
+      "sha": "23e995f5098792dcfd5d086b08aeeaa5277be616",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/23e995f5098792dcfd5d086b08aeeaa5277be616"
+    },
+    "node_id": "REF_kwDOLOaKB69yZWZzL3RhZ3MvMC41LjQ"
+  },
+  {
+    "name": "0.5.3",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.5.3",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.5.3",
+    "commit": {
+      "sha": "3aede18a641bb657e25eea240adfb869d5c12503",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/3aede18a641bb657e25eea240adfb869d5c12503"
+    },
+    "node_id": "REF_kwDOLOaKB69yZWZzL3RhZ3MvMC41LjM"
+  },
+  {
+    "name": "0.5.2",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.5.2",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.5.2",
+    "commit": {
+      "sha": "0c02e946bd54f249bf536e0c00686c0390f5623c",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/0c02e946bd54f249bf536e0c00686c0390f5623c"
+    },
+    "node_id": "REF_kwDOLOaKB69yZWZzL3RhZ3MvMC41LjI"
+  },
+  {
+    "name": "0.5.1",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.5.1",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.5.1",
+    "commit": {
+      "sha": "e8f31835b6b5dfab2ea8aed4ed7c889e627a3b87",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/e8f31835b6b5dfab2ea8aed4ed7c889e627a3b87"
+    },
+    "node_id": "REF_kwDOLOaKB69yZWZzL3RhZ3MvMC41LjE"
+  },
+  {
+    "name": "0.5.0",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.5.0",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.5.0",
+    "commit": {
+      "sha": "8fa4405cb83117508d83f4bf69e7645cf659a8c1",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/8fa4405cb83117508d83f4bf69e7645cf659a8c1"
+    },
+    "node_id": "REF_kwDOLOaKB69yZWZzL3RhZ3MvMC41LjA"
+  },
+  {
+    "name": "0.5.0-snapshot.20251107.1444.0.v53062097",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.5.0-snapshot.20251107.1444.0.v53062097",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.5.0-snapshot.20251107.1444.0.v53062097",
+    "commit": {
+      "sha": "530620977cdc37540e8c3775985db6e39d551d7a",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/530620977cdc37540e8c3775985db6e39d551d7a"
+    },
+    "node_id": "REF_kwDOLOaKB9oAMnJlZnMvdGFncy8wLjUuMC1zbmFwc2hvdC4yMDI1MTEwNy4xNDQ0LjAudjUzMDYyMDk3"
+  },
+  {
+    "name": "0.4.998",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.4.998",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.4.998",
+    "commit": {
+      "sha": "77f7ae668374a3db20ea883f1da063b7e77056bd",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/77f7ae668374a3db20ea883f1da063b7e77056bd"
+    },
+    "node_id": "REF_kwDOLOaKB7FyZWZzL3RhZ3MvMC40Ljk5OA"
+  },
+  {
+    "name": "0.4.25",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.4.25",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.4.25",
+    "commit": {
+      "sha": "94435619e548143fb70c92f4a07217a6c956b20b",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/94435619e548143fb70c92f4a07217a6c956b20b"
+    },
+    "node_id": "REF_kwDOLOaKB7ByZWZzL3RhZ3MvMC40LjI1"
+  },
+  {
+    "name": "0.4.24",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.4.24",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.4.24",
+    "commit": {
+      "sha": "1c7fac8bde5bc8ae05e7718c192531bfa15d75f6",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/1c7fac8bde5bc8ae05e7718c192531bfa15d75f6"
+    },
+    "node_id": "REF_kwDOLOaKB7ByZWZzL3RhZ3MvMC40LjI0"
+  },
+  {
+    "name": "0.4.23",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.4.23",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.4.23",
+    "commit": {
+      "sha": "e893b827c69b0e5ca4107165f06e486cccad4c57",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/e893b827c69b0e5ca4107165f06e486cccad4c57"
+    },
+    "node_id": "REF_kwDOLOaKB7ByZWZzL3RhZ3MvMC40LjIz"
+  },
+  {
+    "name": "0.4.22",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.4.22",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.4.22",
+    "commit": {
+      "sha": "f722da9972fdb17645a493c6c3846d38deaba3da",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/f722da9972fdb17645a493c6c3846d38deaba3da"
+    },
+    "node_id": "REF_kwDOLOaKB7ByZWZzL3RhZ3MvMC40LjIy"
+  },
+  {
+    "name": "0.4.21",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.4.21",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.4.21",
+    "commit": {
+      "sha": "8d785076aaa70f36905d8187ae48317a78f7c1bb",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/8d785076aaa70f36905d8187ae48317a78f7c1bb"
+    },
+    "node_id": "REF_kwDOLOaKB7ByZWZzL3RhZ3MvMC40LjIx"
+  },
+  {
+    "name": "0.4.20",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.4.20",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.4.20",
+    "commit": {
+      "sha": "61203ed520c9a7d9e224cacbe8038b2c5d7b13be",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/61203ed520c9a7d9e224cacbe8038b2c5d7b13be"
+    },
+    "node_id": "REF_kwDOLOaKB7ByZWZzL3RhZ3MvMC40LjIw"
+  },
+  {
+    "name": "0.4.19",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.4.19",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.4.19",
+    "commit": {
+      "sha": "cd768caf03d5330a31a73cd215f4f2a1ea74cc13",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/cd768caf03d5330a31a73cd215f4f2a1ea74cc13"
+    },
+    "node_id": "REF_kwDOLOaKB7ByZWZzL3RhZ3MvMC40LjE5"
+  },
+  {
+    "name": "0.4.18",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.4.18",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.4.18",
+    "commit": {
+      "sha": "817b49015c1fc0acbee0314eb6a8b1f89b24d037",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/817b49015c1fc0acbee0314eb6a8b1f89b24d037"
+    },
+    "node_id": "REF_kwDOLOaKB7ByZWZzL3RhZ3MvMC40LjE4"
+  },
+  {
+    "name": "0.4.17",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.4.17",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.4.17",
+    "commit": {
+      "sha": "b3fc506fa8d31899cf734789e618ec67ee5b5a28",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/b3fc506fa8d31899cf734789e618ec67ee5b5a28"
+    },
+    "node_id": "REF_kwDOLOaKB7ByZWZzL3RhZ3MvMC40LjE3"
+  },
+  {
+    "name": "0.4.16",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.4.16",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.4.16",
+    "commit": {
+      "sha": "af8569b43c99f3e7a5f8d21c5836f9031a53d442",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/af8569b43c99f3e7a5f8d21c5836f9031a53d442"
+    },
+    "node_id": "REF_kwDOLOaKB7ByZWZzL3RhZ3MvMC40LjE2"
+  },
+  {
+    "name": "0.4.15",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.4.15",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.4.15",
+    "commit": {
+      "sha": "e7dd7b93a3a4777ab0aa473cc19c01e865ba20cd",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/e7dd7b93a3a4777ab0aa473cc19c01e865ba20cd"
+    },
+    "node_id": "REF_kwDOLOaKB7ByZWZzL3RhZ3MvMC40LjE1"
+  },
+  {
+    "name": "0.4.14",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.4.14",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.4.14",
+    "commit": {
+      "sha": "27f879fd1f6aaa48ea0ab9f31a70290c1f34f6cd",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/27f879fd1f6aaa48ea0ab9f31a70290c1f34f6cd"
+    },
+    "node_id": "REF_kwDOLOaKB7ByZWZzL3RhZ3MvMC40LjE0"
+  },
+  {
+    "name": "0.4.13",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.4.13",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.4.13",
+    "commit": {
+      "sha": "7b31b8879fec498812e7d9e4a7698c336c789d10",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/7b31b8879fec498812e7d9e4a7698c336c789d10"
+    },
+    "node_id": "REF_kwDOLOaKB7ByZWZzL3RhZ3MvMC40LjEz"
+  },
+  {
+    "name": "0.4.12",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.4.12",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.4.12",
+    "commit": {
+      "sha": "0acccdcf3c9055dbb8e151a1f7ac279eb1328833",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/0acccdcf3c9055dbb8e151a1f7ac279eb1328833"
+    },
+    "node_id": "REF_kwDOLOaKB7ByZWZzL3RhZ3MvMC40LjEy"
+  },
+  {
+    "name": "0.4.11",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.4.11",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.4.11",
+    "commit": {
+      "sha": "253dcf8d1dd91203f2d3968c5074cea59db82dd0",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/253dcf8d1dd91203f2d3968c5074cea59db82dd0"
+    },
+    "node_id": "REF_kwDOLOaKB7ByZWZzL3RhZ3MvMC40LjEx"
+  },
+  {
+    "name": "0.4.10",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.4.10",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.4.10",
+    "commit": {
+      "sha": "a1cbb964af0ccde3334f360b866f988facf9651f",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/a1cbb964af0ccde3334f360b866f988facf9651f"
+    },
+    "node_id": "REF_kwDOLOaKB7ByZWZzL3RhZ3MvMC40LjEw"
+  },
+  {
+    "name": "0.4.9",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.4.9",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.4.9",
+    "commit": {
+      "sha": "39e21525f16266a065f4111da9e7495c4957c1c8",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/39e21525f16266a065f4111da9e7495c4957c1c8"
+    },
+    "node_id": "REF_kwDOLOaKB69yZWZzL3RhZ3MvMC40Ljk"
+  },
+  {
+    "name": "0.4.8",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.4.8",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.4.8",
+    "commit": {
+      "sha": "5f431df71247f4116879e1abb1c53e41e2d0ca24",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/5f431df71247f4116879e1abb1c53e41e2d0ca24"
+    },
+    "node_id": "REF_kwDOLOaKB69yZWZzL3RhZ3MvMC40Ljg"
+  },
+  {
+    "name": "0.4.7",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.4.7",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.4.7",
+    "commit": {
+      "sha": "ae8b427ead6d440c22f8134031bb3e6a0649470a",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/ae8b427ead6d440c22f8134031bb3e6a0649470a"
+    },
+    "node_id": "REF_kwDOLOaKB69yZWZzL3RhZ3MvMC40Ljc"
+  },
+  {
+    "name": "0.4.6",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.4.6",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.4.6",
+    "commit": {
+      "sha": "34945e87060bd0f850ca292279b1d7a6e1847995",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/34945e87060bd0f850ca292279b1d7a6e1847995"
+    },
+    "node_id": "REF_kwDOLOaKB69yZWZzL3RhZ3MvMC40LjY"
+  },
+  {
+    "name": "0.4.5",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.4.5",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.4.5",
+    "commit": {
+      "sha": "0efa9968265507d0b481f759f4e24ed70ba47563",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/0efa9968265507d0b481f759f4e24ed70ba47563"
+    },
+    "node_id": "REF_kwDOLOaKB69yZWZzL3RhZ3MvMC40LjU"
+  },
+  {
+    "name": "0.4.4",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.4.4",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.4.4",
+    "commit": {
+      "sha": "58c76949b6bab0e90448fe4d43c1d153750ee2c3",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/58c76949b6bab0e90448fe4d43c1d153750ee2c3"
+    },
+    "node_id": "REF_kwDOLOaKB69yZWZzL3RhZ3MvMC40LjQ"
+  },
+  {
+    "name": "0.4.3",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.4.3",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.4.3",
+    "commit": {
+      "sha": "3c247ace991f782bae5850a3529abcdcb2d5dd46",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/3c247ace991f782bae5850a3529abcdcb2d5dd46"
+    },
+    "node_id": "REF_kwDOLOaKB69yZWZzL3RhZ3MvMC40LjM"
+  },
+  {
+    "name": "0.4.2",
+    "zipball_url": "https://api.github.com/repos/canton-network/splice/zipball/refs/tags/0.4.2",
+    "tarball_url": "https://api.github.com/repos/canton-network/splice/tarball/refs/tags/0.4.2",
+    "commit": {
+      "sha": "ca030a1556a52437a5d97235d4b7fb444078f41c",
+      "url": "https://api.github.com/repos/canton-network/splice/commits/ca030a1556a52437a5d97235d4b7fb444078f41c"
+    },
+    "node_id": "REF_kwDOLOaKB69yZWZzL3RhZ3MvMC40LjI"
+  }
+]

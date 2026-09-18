@@ -30,7 +30,8 @@ import java.util.List;
  */
 public final class Normalize {
 
-    private static final List<Normalizer> LST_NORMALIZER = List.of(new ScheduleNormalizer());
+    private static final List<Normalizer> LST_NORMALIZER = List.of(new ScheduleNormalizer(),
+            new SpliceTagsNormalizer(), new SpliceReleaseNotesNormalizer());
 
     private static final int LEN_DETAIL = 500;
 

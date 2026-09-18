@@ -24,15 +24,18 @@
 
 <section>
   <h2>Networks</h2>
+  <p class="lead">Scheduled, not running. Every value here is what the operators
+  said they intend to do; a date that has arrived is not evidence that it
+  happened, and no source this feed reads reports a running version.</p>
   <table id="networks">
     <thead>
       <tr>
         <th>Network</th>
-        <th>Splice</th>
+        <th>Scheduled</th>
+        <th>Since</th>
         <th>Minimum</th>
-        <th>Synchronizer</th>
-        <th>Serial</th>
         <th>Next</th>
+        <th>Due</th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -41,21 +44,22 @@
 
 <section>
   <h2>Scheduled</h2>
+  <p class="lead">Upcoming only. Everything else, including what has passed and
+  what was withdrawn upstream, is in <a href="/api/v1/events">/api/v1/events</a>.</p>
   <table id="events">
     <thead>
       <tr>
         <th>Network</th>
-        <th>Type</th>
-        <th>Slot</th>
+        <th>Kind</th>
         <th>Version</th>
         <th>Status</th>
         <th>Effective</th>
+        <th>Title</th>
       </tr>
     </thead>
     <tbody></tbody>
   </table>
 </section>
-
 <section>
   <h2>Sources</h2>
   <table id="sources">

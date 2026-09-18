@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Instant;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -97,7 +96,7 @@ public final class Worker {
     public static boolean publishOnce() {
         Instant instNow = Instant.now();
         String idPublication = Dataset.newPublicationId(instNow);
-        Map<String, Object> mapDs = Dataset.generate(idPublication, instNow, sourceList());
+        Map<String, Object> mapDs = Dataset.generate(idPublication, instNow, index());
         try {
             Dataset.write(Config.datasetDir(), mapDs);
         }
@@ -131,16 +130,21 @@ public final class Worker {
 
 
     /**
-     * @return the registry with the state the index holds for each source, or
-     *         null when the index cannot be read, which publishes the registry
-     *         alone rather than a stale list
+     * The index read once, for one publication: the source list with the state
+     * the index holds, and every event it derived. Both come from one connection
+     * so a publication cannot carry a source list from one moment and events
+     * from another.
+     *
+     * @return what the index yielded, or null when it cannot be read, which
+     *         publishes the registry alone and says UNAVAILABLE rather than
+     *         presenting an empty index as an observed one
      */
-    private static List<Object> sourceList() {
+    private static Dataset.Index index() {
         try (Connection conn = Db.connection()) {
-            return Sources.published(conn, Sources.load());
+            return new Dataset.Index(Sources.published(conn, Sources.load()), Events.published(conn));
         }
         catch (SQLException | IOException e) {
-            System.err.println("source state unavailable, publishing the registry alone: " + e);
+            System.err.println("index unavailable, publishing the registry alone: " + e);
             return null;
         }
     }

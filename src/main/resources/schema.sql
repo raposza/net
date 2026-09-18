@@ -150,6 +150,8 @@ create table if not exists event (
     title               varchar(20000),
     description         varchar(20000),
     upstream_type       varchar(200),
+    commit_sha          varchar(64),
+    commit_time         varchar(40),
     withdrawn           boolean      not null,
     revision            integer      not null,
     first_observed_at   timestamp with time zone not null,
