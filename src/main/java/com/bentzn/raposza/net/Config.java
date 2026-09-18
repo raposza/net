@@ -172,6 +172,102 @@ public final class Config {
     }
 
 
+    /**
+     * Whether the worker mirrors each publication into this environment's data
+     * repository. Off by default, so an environment nobody configured publishes
+     * to nothing.
+     *
+     * @return true when the git publication channel runs
+     */
+    public static boolean publishGit() {
+        return Boolean.parseBoolean(env("FEED_PUBLISH_GIT", "false"));
+    }
+
+
+    /**
+     * The data repository of this environment, and no other. There is no
+     * default: a mirror with nowhere to push is switched off rather than
+     * pointed somewhere by guesswork.
+     *
+     * @return the remote url, or null when none is set
+     */
+    public static String gitRemote() {
+        return optional("FEED_GIT_REMOTE");
+    }
+
+
+    /** @return the branch carrying the data, default main */
+    public static String gitBranchData() {
+        return env("FEED_GIT_BRANCH_DATA", "main");
+    }
+
+
+    /** @return the branch carrying the heartbeat and nothing else, default heartbeat */
+    public static String gitBranchHeartbeat() {
+        return env("FEED_GIT_BRANCH_HEARTBEAT", "heartbeat");
+    }
+
+
+    /**
+     * Root of the working clones the publisher keeps, one per branch. A cache:
+     * deleting it costs a re-clone and nothing else. Distinct from the
+     * collector's mirror root, which holds sources rather than outputs.
+     *
+     * @return the directory, default ./gitpub
+     */
+    public static Path gitPublishDir() {
+        return Paths.get(env("FEED_GIT_PUBLISH_DIR", "gitpub"));
+    }
+
+
+    /**
+     * The private key this environment pushes with. One key per environment, so
+     * no environment can write another's repository.
+     *
+     * @return the key file, or null to let ssh choose
+     */
+    public static Path gitKey() {
+        String fileKey = optional("FEED_GIT_KEY");
+        return fileKey == null ? null : Paths.get(fileKey);
+    }
+
+
+    /**
+     * The pinned host key of the remote. Without it a first connection has
+     * nothing to check the far end against, and a service must never be left to
+     * answer that question interactively.
+     *
+     * @return the known-hosts file, or null to let ssh choose
+     */
+    public static Path gitKnownHosts() {
+        String fileHosts = optional("FEED_GIT_KNOWN_HOSTS");
+        return fileHosts == null ? null : Paths.get(fileHosts);
+    }
+
+
+    /**
+     * Shortest interval between pushes of the data branch. A commit made inside
+     * it waits for a later turn, so a burst of changes leaves one push.
+     *
+     * @return the interval in seconds, default 300
+     */
+    public static int gitPushIntervalSeconds() {
+        return Integer.parseInt(env("FEED_GIT_PUSH_INTERVAL", "300"));
+    }
+
+
+    /**
+     * Interval between heartbeat commits, in seconds. Negative disables it; a
+     * value below the publisher's floor also disables it and says so, because a
+     * mistyped interval is a commit and a notification every few seconds.
+     *
+     * @return the interval in seconds, default -1
+     */
+    public static int heartbeatSeconds() {
+        return Integer.parseInt(env("FEED_HEARTBEAT_SECONDS", "-1"));
+    }
+
+
     private static String env(String nameVar, String valDefault) {
         String valEnv = System.getenv(nameVar);
         return valEnv == null || valEnv.isBlank() ? valDefault : valEnv;

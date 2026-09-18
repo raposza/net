@@ -9,6 +9,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -27,6 +28,11 @@ import java.util.concurrent.TimeUnit;
  */
 public final class Worker {
 
+    private static GitPublish pubGit;
+
+    private static boolean isPubResolved;
+
+
     private Worker() {
     }
 
@@ -41,6 +47,9 @@ public final class Worker {
         boolean isCollecting = Config.collectEnabled();
         System.out.println("worker " + Config.environment() + ": "
                 + (isCollecting ? "acquiring and publishing" : "publishing only, not acquiring"));
+        GitPublish pubStart = publisher();
+        System.out.println("worker " + Config.environment() + ": git publication "
+                + (pubStart == null ? "off" : "to " + pubStart.spec().urlRemote()));
         openIndex();
         while (true) {
             if (isCollecting) {
@@ -88,16 +97,36 @@ public final class Worker {
     public static boolean publishOnce() {
         Instant instNow = Instant.now();
         String idPublication = Dataset.newPublicationId(instNow);
+        Map<String, Object> mapDs = Dataset.generate(idPublication, instNow, sourceList());
         try {
-            Dataset.write(Config.datasetDir(), Dataset.generate(idPublication, instNow, sourceList()));
-            System.out.println("published " + idPublication + " to "
-                    + Config.datasetDir().toAbsolutePath().normalize());
-            return true;
+            Dataset.write(Config.datasetDir(), mapDs);
         }
         catch (IOException e) {
             System.err.println("publication failed: " + e);
             return false;
         }
+        System.out.println("published " + idPublication + " to "
+                + Config.datasetDir().toAbsolutePath().normalize());
+        GitPublish pubNow = publisher();
+        if (pubNow != null) {
+            pubNow.turn(mapDs);
+        }
+        return true;
+    }
+
+
+    /**
+     * The git channel, resolved once. A channel that is switched off or has
+     * nowhere to push resolves to null and is not asked again.
+     *
+     * @return the channel, or null
+     */
+    private static GitPublish publisher() {
+        if (!isPubResolved) {
+            pubGit = GitPublish.fromConfig();
+            isPubResolved = true;
+        }
+        return pubGit;
     }
 
 

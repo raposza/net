@@ -74,7 +74,33 @@ FEED_DB_URL                     jdbc url; defaults to an H2 file under
                                 FEED_DB_DIR, so nothing needs setting
 FEED_DB_USER                    index user, default feed
 FEED_DB_PASSWORD                index password, empty for an embedded file
+FEED_PUBLISH_GIT                whether the worker mirrors each publication
+                                into its data repository, default false
+FEED_GIT_REMOTE                 that repository, one per environment; no
+                                default, and the channel is off without it
+FEED_GIT_BRANCH_DATA            branch carrying the data, default main
+FEED_GIT_BRANCH_HEARTBEAT       branch carrying the heartbeat, default heartbeat
+FEED_GIT_PUBLISH_DIR            working clones, default ./gitpub
+FEED_GIT_KEY                    private key this environment pushes with
+FEED_GIT_KNOWN_HOSTS            pinned host key of the remote
+FEED_GIT_PUSH_INTERVAL          shortest interval in seconds between pushes of
+                                the data branch, default 300
+FEED_HEARTBEAT_SECONDS          heartbeat interval in seconds, default -1 which
+                                disables it; below the floor of 60 s it is also
+                                disabled and says so
 ```
+
+The git publication channel mirrors each publication into a repository of two
+files: the whole dataset as one json document, and a README that carries the
+consumer contract because there is nowhere else for it to live. A commit is made
+only when the dataset moved, which is decided over a form of the document with
+the publication id and the creation stamp blanked - those move on every
+publication by design, so a byte comparison would commit every turn and say
+nothing. The committed file carries their real values. Liveness is a branch of
+its own: a repository that is correctly silent looks exactly like one whose
+writer has stopped, so the heartbeat commits a timestamp on a fixed interval and
+never touches the data branch. Failure to push is reported, retried on a later
+turn, and never blocks a publication.
 
 The api opens no database at all: it serves the published dataset directory and
 nothing else, which is what lets it and the worker run as separate services over
