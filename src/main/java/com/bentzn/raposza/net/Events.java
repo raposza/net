@@ -398,8 +398,16 @@ public final class Events {
 
 
     /**
-     * One published event per kind and upstream reference, however many sources
-     * described it.
+     * One published event per kind, NETWORK and upstream reference, however many
+     * sources described it.
+     *
+     * The network is part of the key because an upstream reference is only
+     * unique within the source family that issues it. Super Validator names
+     * repeat across networks - the same operator runs a node on each - so a key
+     * of kind and reference alone collapsed three rosters into one and kept the
+     * first network's, which published one network's nodes correctly and the
+     * other two as almost empty. A release reference carries no network on
+     * either side, so the two Splice sources join exactly as before.
      *
      * The derivation is per source and an event identifier is derived from the
      * source and the reference, so two sources describing one release produce
@@ -426,7 +434,8 @@ public final class Events {
                 continue;
             }
             Map<String, Object> mapEvent = cast(objEvent);
-            String keyJoin = String.valueOf(mapEvent.get("kind")) + '\u0000' + ref(mapEvent);
+            String keyJoin = String.valueOf(mapEvent.get("kind")) + '\u0000'
+                    + String.valueOf(mapEvent.get("network")) + '\u0000' + ref(mapEvent);
             Map<String, Object> mapFirst = mapPrimary.get(keyJoin);
             if (mapFirst == null) {
                 mapPrimary.put(keyJoin, mapEvent);

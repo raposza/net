@@ -185,9 +185,18 @@ class PublishTest {
      * One network is not one version. The banked DevNet roster carries two, which
      * is what a consumer connected to a single node has to be able to see.
      */
+    /**
+     * Node names repeat across networks, so this also holds the publication join
+     * to keying on the network: without it the rosters collapse into one and two
+     * of the three networks publish almost nothing.
+     */
     @Test
     void theRosterIsPublishedPerNodeAndNeedNotBeUniform() throws Exception {
-        Map<String, Object> mapDevnet = network(withReleases(), "DEVNET");
+        Map<String, Object> mapDs = withReleases();
+        assertEquals(13, ((List<?>) network(mapDs, "MAINNET").get("superValidators")).size());
+        assertEquals(13, ((List<?>) network(mapDs, "TESTNET").get("superValidators")).size(),
+                "a node of one network is not a node of another that happens to share its name");
+        Map<String, Object> mapDevnet = network(mapDs, "DEVNET");
         List<?> lstNode = (List<?>) mapDevnet.get("superValidators");
         assertEquals(14, lstNode.size(), "every node in the banked roster is published");
         java.util.Set<String> setVersion = new java.util.TreeSet<>();
@@ -291,7 +300,7 @@ class PublishTest {
         List<Object> lstEvent = new ArrayList<>(published());
         lstEvent.addAll(releases());
         lstEvent.addAll(reported());
-        return Dataset.generate("pub_test", INST_NOW, new Dataset.Index(List.of(), lstEvent));
+        return Dataset.generate("pub_test", INST_NOW, new Dataset.Index(List.of(), Events.joined(lstEvent)));
     }
 
 
@@ -350,6 +359,12 @@ class PublishTest {
      * The releases as they are published: both Splice sources, in the order
      * Normalize.all() declares, joined exactly as the index publication joins
      * them.
+     *
+     * Everything this suite publishes goes through that same join, because the
+     * service does: `Events.published(Connection)` joins over every source's
+     * events together. A test that concatenated them instead exercised a path
+     * the service never takes, and the first roster published from it was wrong
+     * on two networks out of three.
      */
     private static List<Object> releases() throws Exception {
         List<Object> lstOut = new ArrayList<>();

@@ -4,6 +4,22 @@
 Releases before 0.2.0 carried no version and no tag; their history is the commit
 log.
 
+## 0.5.1
+
+- The Super Validator rosters of TestNet and DevNet were published almost empty.
+  Events from different sources describing one thing are joined at publication
+  on kind and upstream reference, and a node's upstream reference is its name -
+  which the same operator reuses on every network it runs on. The three rosters
+  therefore collapsed into one and kept the first network's, so MainNet
+  published 13 nodes, DevNet published the single node whose name appears
+  nowhere else, and TestNet published none. The join now keys on the network as
+  well. A release reference carries no network, so the two Splice sources join
+  exactly as before.
+- The test that asserted the DevNet roster concatenated each source's published
+  events instead of joining them, which is not the path the service takes. It
+  now goes through `Events.joined` as `Events.published` does, and asserts the
+  size of all three rosters.
+
 ## 0.5.0
 
 - `current` IS NOW AN OBSERVATION. It is the version the network reports it is
