@@ -62,7 +62,8 @@ public final class Events {
     /** The event fields a revision is made of, in the order they are compared. */
     public static final List<String> LST_FIELD = List.of("kind", "network", "status", "effective.from",
             "effective.to", "version", "version.precision", "version.change", "title", "description",
-            "upstream.type", "commit_sha", "commit_time", "withdrawn");
+            "upstream.type", "commit_sha", "commit_time", "sv_version", "migration_id", "serial_id", "chain_id_suffix",
+            "successor_version", "legacy_version", "scan_url", "withdrawn");
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -283,7 +284,8 @@ public final class Events {
     public static List<Object> published(Connection conn) throws SQLException {
         String sqlRead = "select id, source_id, subject_ref, kind, network, status, effective_from,"
                 + " effective_to, version, version_precision, version_change, title, description,"
-                + " upstream_type, commit_sha, commit_time, withdrawn, revision,"
+                + " upstream_type, commit_sha, commit_time, sv_version, migration_id, serial_id, chain_id_suffix,"
+                + " successor_version, legacy_version, scan_url, withdrawn, revision,"
                 + " first_observed_at, last_banked_at,"
                 + " last_observation_id from event";
         Map<String, List<Event>> mapSource = new TreeMap<>();
@@ -303,10 +305,17 @@ public final class Events {
                 mapField.put("upstream.type", rs.getString(14));
                 mapField.put("commit_sha", rs.getString(15));
                 mapField.put("commit_time", rs.getString(16));
-                mapField.put("withdrawn", rs.getBoolean(17) ? "true" : "false");
-                Event evt = new Event(rs.getString(1), rs.getString(3), mapField, rs.getInt(18),
-                        rs.getObject(19, OffsetDateTime.class).toInstant(),
-                        rs.getObject(20, OffsetDateTime.class).toInstant(), rs.getString(21));
+                mapField.put("sv_version", rs.getString(17));
+                mapField.put("migration_id", rs.getString(18));
+                mapField.put("serial_id", rs.getString(19));
+                mapField.put("chain_id_suffix", rs.getString(20));
+                mapField.put("successor_version", rs.getString(21));
+                mapField.put("legacy_version", rs.getString(22));
+                mapField.put("scan_url", rs.getString(23));
+                mapField.put("withdrawn", rs.getBoolean(24) ? "true" : "false");
+                Event evt = new Event(rs.getString(1), rs.getString(3), mapField, rs.getInt(25),
+                        rs.getObject(26, OffsetDateTime.class).toInstant(),
+                        rs.getObject(27, OffsetDateTime.class).toInstant(), rs.getString(28));
                 mapSource.computeIfAbsent(rs.getString(2), idNew -> new ArrayList<>()).add(evt);
             }
         }
@@ -368,6 +377,14 @@ public final class Events {
                             "ref", evt.subjectRef()),
                     "commit_sha", mapField.get("commit_sha"),
                     "commit_time", mapField.get("commit_time"),
+                    "deployment", Dataset.map(
+                            "svVersion", mapField.get("sv_version"),
+                            "migrationId", mapField.get("migration_id"),
+                            "serialId", mapField.get("serial_id"),
+                            "chainIdSuffix", mapField.get("chain_id_suffix"),
+                            "successorVersion", mapField.get("successor_version"),
+                            "legacyVersion", mapField.get("legacy_version")),
+                    "scan_url", mapField.get("scan_url"),
                     "revision", Integer.valueOf(evt.revision()),
                     "firstObservedAt", Dataset.iso(evt.firstObservedAt()),
                     "lastBankedAt", Dataset.iso(evt.lastBankedAt()),
@@ -654,9 +671,10 @@ public final class Events {
     private static void insertEvents(Connection conn, String idSource, List<Event> lstEvent) throws SQLException {
         String sqlIns = "insert into event (id, source_id, subject_ref, kind, network, status, effective_from,"
                 + " effective_to, version, version_precision, version_change, title, description, upstream_type,"
-                + " commit_sha, commit_time, withdrawn, revision, first_observed_at, last_banked_at,"
-                + " last_observation_id)"
-                + " values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+                + " commit_sha, commit_time, sv_version, migration_id, serial_id, chain_id_suffix,"
+                + " successor_version, legacy_version, scan_url, withdrawn, revision, first_observed_at,"
+                + " last_banked_at, last_observation_id)"
+                + " values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
         try (PreparedStatement stmt = conn.prepareStatement(sqlIns)) {
             for (Event evt : lstEvent) {
                 Map<String, String> mapField = evt.mapField();
@@ -676,11 +694,18 @@ public final class Events {
                 stmt.setString(14, mapField.get("upstream.type"));
                 stmt.setString(15, mapField.get("commit_sha"));
                 stmt.setString(16, mapField.get("commit_time"));
-                stmt.setBoolean(17, "true".equals(mapField.get("withdrawn")));
-                stmt.setInt(18, evt.revision());
-                stmt.setObject(19, OffsetDateTime.ofInstant(evt.firstObservedAt(), ZoneOffset.UTC));
-                stmt.setObject(20, OffsetDateTime.ofInstant(evt.lastBankedAt(), ZoneOffset.UTC));
-                stmt.setString(21, evt.lastObservationId());
+                stmt.setString(17, mapField.get("sv_version"));
+                stmt.setString(18, mapField.get("migration_id"));
+                stmt.setString(19, mapField.get("serial_id"));
+                stmt.setString(20, mapField.get("chain_id_suffix"));
+                stmt.setString(21, mapField.get("successor_version"));
+                stmt.setString(22, mapField.get("legacy_version"));
+                stmt.setString(23, mapField.get("scan_url"));
+                stmt.setBoolean(24, "true".equals(mapField.get("withdrawn")));
+                stmt.setInt(25, evt.revision());
+                stmt.setObject(26, OffsetDateTime.ofInstant(evt.firstObservedAt(), ZoneOffset.UTC));
+                stmt.setObject(27, OffsetDateTime.ofInstant(evt.lastBankedAt(), ZoneOffset.UTC));
+                stmt.setString(28, evt.lastObservationId());
                 stmt.addBatch();
             }
             if (!lstEvent.isEmpty()) {

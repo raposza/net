@@ -466,26 +466,50 @@ public final class GitPublish {
      */
     private void fields(StringBuilder sbOut) {
         sbOut.append("\n## Fields\n\n");
+        sbOut.append("Where a description below says what upstream states, it is taken from the\n");
+        sbOut.append("Splice release notes; nothing here is inferred from a field name.\n\n");
         sbOut.append("`timestamp` is the RAPOSZA TIMESTAMP: when the file was emitted by the\n");
         sbOut.append("Raposza service. It is not an upstream time, and it is not when any of the\n");
         sbOut.append("values below it changed.\n\n");
         sbOut.append("Under `networks`, per network:\n\n");
-        sbOut.append("- `current` - the version that is scheduled to be running. It is the latest\n");
-        sbOut.append("  confirmed upgrade whose date has arrived. The schedule is what the network\n");
-        sbOut.append("  operators have published; no source this feed reads reports back what a\n");
-        sbOut.append("  network has actually loaded.\n");
-        sbOut.append("- `minimum` - the minimum version in force. Upstream sometimes states this to\n");
-        sbOut.append("  a minor version only, so `\"0.7\"` here means `0.7.x`.\n");
+        sbOut.append("- `current` - the version the network reports it is RUNNING. It is what the\n");
+        sbOut.append("  synchronizer answers, not what the calendar plans, so it can differ from\n");
+        sbOut.append("  `scheduled` in either direction: a network that moved early carries a\n");
+        sbOut.append("  version no schedule entry has reached yet.\n");
+        sbOut.append("- `sv-version` - the Super Validator application version reported beside it.\n");
+        sbOut.append("  A different thing from the synchronizer version, equal to it most of the\n");
+        sbOut.append("  time, and the difference is the whole story when there is one.\n");
+        sbOut.append("- `minimum` - the minimum version in force, from the operations schedule.\n");
+        sbOut.append("  Upstream states it in prose and often to a minor version only, so `\"0.7\"`\n");
+        sbOut.append("  here means `0.7.x` and no patch digit is invented.\n");
         sbOut.append("- `scheduled` - the next upgrade still ahead, as `date` and `version`, or\n");
         sbOut.append("  `null` where none is scheduled. An entry that upstream has cancelled is not\n");
-        sbOut.append("  published here; one it lists as tentative is.\n\n");
+        sbOut.append("  published here; one it lists as tentative is.\n");
+        sbOut.append("- `serial-id` - upstream increments it by one for each logical synchronizer\n");
+        sbOut.append("  upgrade, and states that it carries what the migration id used to: release\n");
+        sbOut.append("  names, DNS entries, database names, chain ids and port numbers. If you pin\n");
+        sbOut.append("  any of those, this is the number they follow.\n");
+        sbOut.append("- `migration-id` - upstream states this is now FROZEN at its current value and\n");
+        sbOut.append("  configured once, and that operators keep the value they have. It is\n");
+        sbOut.append("  published because a frozen field that moves would be worth knowing about.\n");
+        sbOut.append("- `chain-id-suffix` - part of the synchronizer identity, as reported.\n");
+        sbOut.append("- `successor` and `legacy` - the versions of the synchronizer being upgraded\n");
+        sbOut.append("  to and from. Upstream supports the two coexisting during an upgrade rather\n");
+        sbOut.append("  than cutting over, so both are `null` while none is in flight, and a\n");
+        sbOut.append("  non-null `successor` is the network reporting one that is.\n");
+        sbOut.append("- `super-validators` - every Super Validator node of the network with the\n");
+        sbOut.append("  version it reports and the url it answers on. YOU ARE CONNECTED TO A NODE,\n");
+        sbOut.append("  NOT TO A NETWORK: a roster carrying more than one version is normal during\n");
+        sbOut.append("  an upgrade, and `current` alone cannot tell you whether yours has moved.\n");
+        sbOut.append("  The list is empty where no roster is reported, never absent.\n\n");
         sbOut.append("`splice-latest` is the highest version the Splice tags endpoint carries. It is\n");
         sbOut.append("different in kind from the three above: it says a release EXISTS, and says\n");
         sbOut.append("nothing about any network taking it. A tag carries no date, so this value has\n");
         sbOut.append("none.\n\n");
         sbOut.append("Every version is a QUOTED STRING. Unquoted, `0.7` is a number to every yaml\n");
         sbOut.append("parser there is. `timestamp` and `date` are left unquoted so that they load as\n");
-        sbOut.append("a timestamp and a date.\n\n");
+        sbOut.append("a timestamp and a date, and `migration-id` and `serial-id` are left unquoted\n");
+        sbOut.append("because upstream states them as numbers.\n\n");
         sbOut.append("`").append(NAME_HISTORY).append("` is a list under one `history:` key, newest")
                 .append(" first. Each entry is a\n");
         sbOut.append("full snapshot of `").append(NAME_VERSIONS).append("` as it stood, its timestamp")

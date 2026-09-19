@@ -1,0 +1,9 @@
+{"ref":"devnet","network":"DEVNET","kind":"NETWORK_DEPLOYMENT","period":null,"field":"chain_id_suffix","value":"0","precision":null,"raw":"0","confidence":"HIGH"}
+{"ref":"devnet","network":"DEVNET","kind":"NETWORK_DEPLOYMENT","period":null,"field":"legacy_version","value":null,"precision":null,"raw":null,"confidence":"HIGH"}
+{"ref":"devnet","network":"DEVNET","kind":"NETWORK_DEPLOYMENT","period":null,"field":"migration_id","value":"1","precision":null,"raw":"1","confidence":"HIGH"}
+{"ref":"devnet","network":"DEVNET","kind":"NETWORK_DEPLOYMENT","period":null,"field":"serial_id","value":"5","precision":null,"raw":"5","confidence":"HIGH"}
+{"ref":"devnet","network":"DEVNET","kind":"NETWORK_DEPLOYMENT","period":null,"field":"successor_version","value":null,"precision":null,"raw":null,"confidence":"HIGH"}
+{"ref":"devnet","network":"DEVNET","kind":"NETWORK_DEPLOYMENT","period":null,"field":"sv_version","value":"0.8.3","precision":null,"raw":"0.8.3","confidence":"HIGH"}
+{"ref":"devnet","network":"DEVNET","kind":"NETWORK_DEPLOYMENT","period":null,"field":"title","value":"DEVNET","precision":null,"raw":"devnet","confidence":"HIGH"}
+{"ref":"devnet","network":"DEVNET","kind":"NETWORK_DEPLOYMENT","period":null,"field":"upstream.type","value":"deployment-info","precision":null,"raw":"deployment-info","confidence":"HIGH"}
+{"ref":"devnet","network":"DEVNET","kind":"NETWORK_DEPLOYMENT","period":null,"field":"version","value":"0.8.3","precision":"PATCH","raw":"0.8.3","confidence":"HIGH"}

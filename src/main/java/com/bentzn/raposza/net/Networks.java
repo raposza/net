@@ -8,6 +8,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -55,6 +56,10 @@ public final class Networks {
 
     private static final String KIND_MINIMUM = "MINIMUM_SPLICE_VERSION";
 
+    private static final String KIND_DEPLOYMENT = "NETWORK_DEPLOYMENT";
+
+    private static final String KIND_NODE = "SV_NODE";
+
     private static final String CONFIRMED = "CONFIRMED";
 
     private static final String CANCELLED = "CANCELLED";
@@ -97,10 +102,90 @@ public final class Networks {
                             "version", version(mapNext, "value"),
                             "status", text(mapNext, "status"),
                             "from", effective(mapNext)),
+                    "deployment", deployment(lstMine),
+                    "superValidators", nodes(lstMine),
                     "publicationId", idPublication,
                     "updatedAt", stampNow));
         }
         return lstOut;
+    }
+
+
+    /**
+     * What the network reports it is RUNNING, as distinct from everything above
+     * it, which is what its operators have said they intend.
+     *
+     * One endpoint per network reports one record, so there is exactly one such
+     * event per network and the newest reading of it is the event's current
+     * state. Where no such event exists - an environment that has banked none -
+     * every field is null, which is the same shape as a network the schedule is
+     * silent about.
+     *
+     * @param lstMine the events of one network
+     * @return the deployment record, fields null where nothing reports one
+     */
+    private static Map<String, Object> deployment(List<Map<String, Object>> lstMine) {
+        Map<String, Object> mapFound = null;
+        for (Map<String, Object> mapEvent : lstMine) {
+            if (KIND_DEPLOYMENT.equals(text(mapEvent, "kind"))) {
+                mapFound = mapEvent;
+            }
+        }
+        Map<String, Object> mapDeploy = sub(mapFound, "deployment");
+        return Dataset.map(
+                "version", version(mapFound, "value"),
+                "precision", version(mapFound, "precision"),
+                "svVersion", text(mapDeploy, "svVersion"),
+                "migrationId", text(mapDeploy, "migrationId"),
+                "serialId", text(mapDeploy, "serialId"),
+                "chainIdSuffix", text(mapDeploy, "chainIdSuffix"),
+                "successorVersion", text(mapDeploy, "successorVersion"),
+                "legacyVersion", text(mapDeploy, "legacyVersion"),
+                "eventId", id(mapFound));
+    }
+
+
+    /**
+     * Every Super Validator node of one network with the version it reports.
+     *
+     * An organization is connected to a node, not to a network, and the two
+     * are not the same fact: a roster carrying more than one version is normal
+     * during an upgrade, and a consumer told only the network figure cannot see
+     * whether its own node is among the ones that moved.
+     *
+     * Ordered by name, which is upstream's own identifier for a node, so two
+     * publications of one index are identical.
+     *
+     * @param lstMine the events of one network
+     * @return one record per node, empty where none is reported
+     */
+    private static List<Object> nodes(List<Map<String, Object>> lstMine) {
+        List<Map<String, Object>> lstNode = new ArrayList<>();
+        for (Map<String, Object> mapEvent : lstMine) {
+            if (KIND_NODE.equals(text(mapEvent, "kind"))) {
+                lstNode.add(mapEvent);
+            }
+        }
+        lstNode.sort(Comparator.comparing(mapOne -> String.valueOf(ref(mapOne))));
+        List<Object> lstOut = new ArrayList<>();
+        for (Map<String, Object> mapEvent : lstNode) {
+            lstOut.add(Dataset.map(
+                    "name", ref(mapEvent),
+                    "version", version(mapEvent, "value"),
+                    "scan", text(mapEvent, "scan_url"),
+                    "eventId", id(mapEvent)));
+        }
+        return lstOut;
+    }
+
+
+    /**
+     * @param mapEvent a published event
+     * @return the upstream reference it was keyed by, which for a node is its
+     *         name
+     */
+    private static String ref(Map<String, Object> mapEvent) {
+        return text(sub(mapEvent, "upstream"), "ref");
     }
 
 

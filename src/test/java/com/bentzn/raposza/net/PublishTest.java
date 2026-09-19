@@ -144,20 +144,58 @@ class PublishTest {
         assertTrue(textYaml.startsWith("timestamp: 2026-09-18T00:00:00Z\nnetworks:\n"), textYaml);
         assertTrue(textYaml.contains("  mainnet:\n"
                 + "    current: \"0.7.5\"\n"
+                + "    sv-version: \"0.7.5\"\n"
                 + "    minimum: \"0.7\"\n"
                 + "    scheduled:\n"
                 + "      date: 2026-09-21\n"
-                + "      version: \"0.8.0\"\n"), textYaml);
-        assertTrue(textYaml.contains("  testnet:\n"
-                + "    current: \"0.8.0\"\n"
-                + "    minimum: \"0.7\"\n"), textYaml);
-        assertTrue(textYaml.contains("  devnet:\n"
-                + "    current: \"0.8.1\"\n"
-                + "    minimum: \"0.7\"\n"), textYaml);
+                + "      version: \"0.8.0\"\n"
+                + "    migration-id: 4\n"
+                + "    serial-id: 5\n"
+                + "    chain-id-suffix: \"2\"\n"
+                + "    successor: null\n"
+                + "    legacy: null\n"), textYaml);
+        assertTrue(textYaml.contains("      - name: \"Global-Synchronizer-Foundation\"\n"
+                + "        version: \"0.7.5\"\n"
+                + "        scan: \"https://scan.sv-1.global.canton.network.sync.global\"\n"), textYaml);
         assertTrue(textYaml.endsWith("splice-latest: \"0.8.3\"\n"), textYaml);
         assertTrue(textYaml.indexOf("  mainnet:") < textYaml.indexOf("  testnet:")
                 && textYaml.indexOf("  testnet:") < textYaml.indexOf("  devnet:"),
                 "the networks are published in one fixed order");
+    }
+
+
+    /**
+     * The reason `current` stopped being read off the schedule. On the banked
+     * bodies DevNet reports 0.8.3 while the schedule's latest arrived upgrade is
+     * 0.8.1, so the published value and the planned one differ and the published
+     * one is the observation.
+     */
+    @Test
+    void currentIsWhatTheNetworkReportsAndNotWhatTheCalendarPlanned() throws Exception {
+        Map<String, Object> mapDs = withReleases();
+        Map<String, Object> mapDevnet = network(mapDs, "DEVNET");
+        assertEquals("0.8.3", cast(mapDevnet.get("deployment")).get("version"));
+        assertEquals("0.8.1", cast(mapDevnet.get("splice")).get("scheduledVersion"));
+        assertTrue(Versions.yaml(mapDs).contains("  devnet:\n    current: \"0.8.3\"\n"),
+                Versions.yaml(mapDs));
+    }
+
+
+    /**
+     * One network is not one version. The banked DevNet roster carries two, which
+     * is what a consumer connected to a single node has to be able to see.
+     */
+    @Test
+    void theRosterIsPublishedPerNodeAndNeedNotBeUniform() throws Exception {
+        Map<String, Object> mapDevnet = network(withReleases(), "DEVNET");
+        List<?> lstNode = (List<?>) mapDevnet.get("superValidators");
+        assertEquals(14, lstNode.size(), "every node in the banked roster is published");
+        java.util.Set<String> setVersion = new java.util.TreeSet<>();
+        for (Object objNode : lstNode) {
+            setVersion.add(String.valueOf(cast(objNode).get("version")));
+            assertNotNull(cast(objNode).get("scan"), "a node is published with the url it answers on");
+        }
+        assertEquals(java.util.Set.of("0.8.1", "0.8.3"), setVersion);
     }
 
 
@@ -252,7 +290,35 @@ class PublishTest {
     private static Map<String, Object> withReleases() throws Exception {
         List<Object> lstEvent = new ArrayList<>(published());
         lstEvent.addAll(releases());
+        lstEvent.addAll(reported());
         return Dataset.generate("pub_test", INST_NOW, new Dataset.Index(List.of(), lstEvent));
+    }
+
+
+    /**
+     * What the three networks report they are running, and their rosters, from
+     * the banked bodies of the six deployment sources.
+     */
+    private static List<Object> reported() throws Exception {
+        List<Object> lstOut = new ArrayList<>();
+        for (String[] arrNet : new String[][] {
+                { "mainnet", "MAINNET" }, { "testnet", "TESTNET" }, { "devnet", "DEVNET" } }) {
+            lstOut.addAll(fromSource(new NetworkInfoNormalizer("sync-global-info-" + arrNet[0], arrNet[1],
+                    arrNet[0])));
+            lstOut.addAll(fromSource(
+                    new SvVersionsNormalizer("sync-global-sv-versions-" + arrNet[0], arrNet[1])));
+        }
+        return lstOut;
+    }
+
+
+    private static Map<String, Object> network(Map<String, Object> mapDs, String nameNetwork) {
+        for (Object objNetwork : (List<?>) mapDs.get("networks")) {
+            Map<String, Object> mapNetwork = cast(objNetwork);
+            if (nameNetwork.equals(mapNetwork.get("network")))
+                return mapNetwork;
+        }
+        throw new IllegalStateException("no network " + nameNetwork + " was published");
     }
 
 

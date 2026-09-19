@@ -95,8 +95,11 @@ FEED_GITHUB_TOKEN               credential the release call authenticates with,
 
 The git publication channel mirrors each publication into a repository of three
 files. `versions.yml` is the current state, reduced to the values a consumer acts
-on: per network the version scheduled to be running, the minimum in force and the
-next upgrade ahead, plus the latest Splice release that exists. `history.yml` is
+on: per network the version it reports it is RUNNING and the SV application
+version beside it, the minimum in force and the next upgrade ahead from the
+schedule, the migration and chain identity, the successor and legacy versions
+when a migration is staged, and every Super Validator node with the version it
+reports; then the latest Splice release that exists. `history.yml` is
 every state that file has held, newest first, each entry a full snapshot of it -
 the accumulated record is the one thing here a reader cannot rebuild from
 anywhere else, so it is published as a file rather than left to a commit log. The

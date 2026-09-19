@@ -4,6 +4,50 @@
 Releases before 0.2.0 carried no version and no tag; their history is the commit
 log.
 
+## 0.5.0
+
+- `current` IS NOW AN OBSERVATION. It is the version the network reports it is
+  running, from the synchronizer's own deployment endpoint, and no longer the
+  latest scheduled upgrade whose date had passed. On the bodies this release was
+  built against the two disagree: DevNet reports 0.8.3 where the schedule's
+  latest arrived entry is 0.8.1. `minimum` and `scheduled` are unchanged and
+  still come from the operations schedule, which is the only source for either.
+- `versions.yml` gains, per network: `sv-version`, the Super Validator
+  application version beside the synchronizer's; `serial-id`, which upstream
+  increments once per logical synchronizer upgrade and which now carries what
+  the migration id used to - release names, DNS entries, database names, chain
+  ids and port numbers; `migration-id`, which upstream states is frozen and
+  configured once; `chain-id-suffix`; `successor` and `legacy`, the versions
+  being upgraded to and from, null while no upgrade is in flight since upstream
+  supports the two coexisting rather than cutting over; and `super-validators`,
+  every node with the version it reports and the url it answers on.
+- AN ORGANIZATION IS CONNECTED TO A NODE, NOT TO A NETWORK. A roster carrying
+  more than one version is normal during an upgrade, and the per-network figure
+  cannot tell a consumer whether its own node has moved. That is why the roster
+  is published per node rather than reduced to one number.
+- Six new sources, two per network: the deployment endpoint and the Super
+  Validator roster of MainNet, TestNet and DevNet. Authority OFFICIAL, publisher
+  the Global Synchronizer Foundation, polled every 300 s. Each is pinned to one
+  network and a body that names another is refused rather than banked under the
+  wrong name.
+- The roster is comma-separated text served as `text/plain`, so the media type
+  says nothing and the shape is the only check: the header must be the one the
+  parser was written against and every row must hold three fields. An HTML error
+  page and a truncated response both arrive as `text/plain`.
+- New event fields, which are new columns: `sv_version`, `migration_id`,
+  `serial_id`, `chain_id_suffix`, `successor_version`, `legacy_version` and
+  `scan_url`. An
+  index built with the previous schema is dropped and rebuilt from the evidence
+  store and the journal, as it is for any schema change.
+- The network record served by the api gains `deployment` and `superValidators`
+  beside the `splice` and `next` blocks it already carried.
+- Every statement in the data `README.md` about what a deployment field means is
+  taken from the Splice release notes, and nothing there is inferred from a
+  field name. The first cut of this release left `serial_id` out and described
+  `migration-id` as the number a deployment is pinned to and can be wrong about;
+  upstream states the reverse of both, and the banked bodies agree with
+  upstream.
+
 ## 0.4.0
 
 - BREAKING, the data repository. `state.json` and `versions.txt` are gone. What

@@ -1,7 +1,7 @@
 <!-- Author Claude/bentzn -->
 # Security
 
-Reviewed 2026-09-19 for v0.4.0.
+Reviewed 2026-09-19 for v0.5.0.
 
 ## Reporting a vulnerability
 
@@ -42,8 +42,10 @@ That shapes which defects matter most here:
   that breaks that link belongs in the same class.
 - **The parsers.** Every source body is bytes a third party controls. The XML
   parser refuses doctype declarations and resolves no external entity or schema;
-  the JSON parsers refuse trailing content; every normalizer refuses a body it
-  does not recognise whole rather than reading half of it. A body that can make
+  the JSON parsers refuse trailing content; the comma-separated roster is served
+  as `text/plain`, so its shape is the only check there is and both its header
+  and its field count are required; every normalizer refuses a body it does not
+  recognise whole rather than reading half of it. A body that can make
   this service fetch something, read a local file, or allocate without bound
   belongs in the first class above and not in a footnote.
 - **The credentials.** Two kinds, with different scopes. Each environment pushes

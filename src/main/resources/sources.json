@@ -103,6 +103,84 @@
       "pollSeconds": 900,
       "includePreReleases": true,
       "enabled": true
+    },
+    {
+      "id": "sync-global-info-mainnet",
+      "publisher": "Global Synchronizer Foundation",
+      "transport": "http",
+      "url": "https://docs.global.canton.network.sync.global/info",
+      "branch": null,
+      "pathPrefix": null,
+      "sourceAuthority": "OFFICIAL",
+      "claimPolicy": "network-deployment-state",
+      "pollSeconds": 300,
+      "includePreReleases": false,
+      "enabled": true
+    },
+    {
+      "id": "sync-global-sv-versions-mainnet",
+      "publisher": "Global Synchronizer Foundation",
+      "transport": "http",
+      "url": "https://docs.global.canton.network.sync.global/versions",
+      "branch": null,
+      "pathPrefix": null,
+      "sourceAuthority": "OFFICIAL",
+      "claimPolicy": "sv-node-versions",
+      "pollSeconds": 300,
+      "includePreReleases": false,
+      "enabled": true
+    },
+    {
+      "id": "sync-global-info-testnet",
+      "publisher": "Global Synchronizer Foundation",
+      "transport": "http",
+      "url": "https://docs.test.global.canton.network.sync.global/info",
+      "branch": null,
+      "pathPrefix": null,
+      "sourceAuthority": "OFFICIAL",
+      "claimPolicy": "network-deployment-state",
+      "pollSeconds": 300,
+      "includePreReleases": false,
+      "enabled": true
+    },
+    {
+      "id": "sync-global-sv-versions-testnet",
+      "publisher": "Global Synchronizer Foundation",
+      "transport": "http",
+      "url": "https://docs.test.global.canton.network.sync.global/versions",
+      "branch": null,
+      "pathPrefix": null,
+      "sourceAuthority": "OFFICIAL",
+      "claimPolicy": "sv-node-versions",
+      "pollSeconds": 300,
+      "includePreReleases": false,
+      "enabled": true
+    },
+    {
+      "id": "sync-global-info-devnet",
+      "publisher": "Global Synchronizer Foundation",
+      "transport": "http",
+      "url": "https://docs.dev.global.canton.network.sync.global/info",
+      "branch": null,
+      "pathPrefix": null,
+      "sourceAuthority": "OFFICIAL",
+      "claimPolicy": "network-deployment-state",
+      "pollSeconds": 300,
+      "includePreReleases": false,
+      "enabled": true
+    },
+    {
+      "id": "sync-global-sv-versions-devnet",
+      "publisher": "Global Synchronizer Foundation",
+      "transport": "http",
+      "url": "https://docs.dev.global.canton.network.sync.global/versions",
+      "branch": null,
+      "pathPrefix": null,
+      "sourceAuthority": "OFFICIAL",
+      "claimPolicy": "sv-node-versions",
+      "pollSeconds": 300,
+      "includePreReleases": false,
+      "enabled": true
     }
   ]
 }

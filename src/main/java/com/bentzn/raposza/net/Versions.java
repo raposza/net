@@ -11,10 +11,18 @@ import java.util.Map;
  * `versions.yml`: the published state reduced to the values a consumer acts on,
  * in a form a person also reads without tooling.
  *
- * Per network it carries the version that is scheduled to be running, the
- * minimum version in force, and the next upgrade still ahead. The last line is
- * the highest version the Splice tags endpoint carries, which is the only source
- * that says a release exists at all.
+ * Per network it carries what the network reports it is RUNNING - `current` and
+ * the SV application version beside it - the minimum version in force and the
+ * next upgrade still ahead, both from the schedule, the identity of the
+ * deployment, and every Super Validator node with the version it reports. The
+ * last line is the highest version the Splice tags endpoint carries, which is
+ * the only source that says a release exists at all.
+ *
+ * `current` is an OBSERVATION. It is what the synchronizer answers, not what the
+ * calendar plans, and the two disagree whenever a network has moved early or
+ * late. The roster is there because an organization is connected to a node
+ * rather than to a network, and a roster carrying more than one version is
+ * normal during an upgrade.
  *
  * EVERY VERSION IS A QUOTED STRING. Unquoted, `0.7` is a number to every yaml
  * parser there is, and `0.7.0` is not the same value as `0.7` once one of them
@@ -50,7 +58,7 @@ public final class Versions {
      * @return the whole text of `versions.yml`, newline terminated
      */
     public static String yaml(Map<String, Object> mapDs) {
-        StringBuilder sbOut = new StringBuilder(512);
+        StringBuilder sbOut = new StringBuilder(4096);
         sbOut.append(KEY_STAMP).append(' ')
                 .append(String.valueOf(Dataset.meta(mapDs).get("createdAt"))).append('\n');
         sbOut.append("networks:\n");
@@ -58,10 +66,12 @@ public final class Versions {
             Map<String, Object> mapNetwork = network(mapDs, nameNetwork);
             Map<String, Object> mapSplice = sub(mapNetwork, "splice");
             Map<String, Object> mapNext = sub(mapNetwork, "next");
+            Map<String, Object> mapDeploy = sub(mapNetwork, "deployment");
             String verNext = field(mapNext, "version");
             String dayNext = field(mapNext, "from");
             sbOut.append("  ").append(MAP_KEY.get(nameNetwork)).append(":\n");
-            sbOut.append("    current: ").append(quote(field(mapSplice, "scheduledVersion"))).append('\n');
+            sbOut.append("    current: ").append(quote(field(mapDeploy, "version"))).append('\n');
+            sbOut.append("    sv-version: ").append(quote(field(mapDeploy, "svVersion"))).append('\n');
             sbOut.append("    minimum: ").append(quote(field(mapSplice, "minimumVersion"))).append('\n');
             if (verNext == null && dayNext == null) {
                 sbOut.append("    scheduled: null\n");
@@ -71,9 +81,44 @@ public final class Versions {
                 sbOut.append("      date: ").append(dayNext == null ? "null" : dayNext).append('\n');
                 sbOut.append("      version: ").append(quote(verNext)).append('\n');
             }
+            sbOut.append("    migration-id: ").append(plain(field(mapDeploy, "migrationId"))).append('\n');
+            sbOut.append("    serial-id: ").append(plain(field(mapDeploy, "serialId"))).append('\n');
+            sbOut.append("    chain-id-suffix: ").append(quote(field(mapDeploy, "chainIdSuffix"))).append('\n');
+            sbOut.append("    successor: ").append(quote(field(mapDeploy, "successorVersion"))).append('\n');
+            sbOut.append("    legacy: ").append(quote(field(mapDeploy, "legacyVersion"))).append('\n');
+            nodes(sbOut, mapNetwork);
         }
         sbOut.append("splice-latest: ").append(quote(latest(mapDs))).append('\n');
         return sbOut.toString();
+    }
+
+
+    /**
+     * The Super Validator roster of one network, in the order the publication
+     * holds it.
+     *
+     * An empty roster is written as an empty sequence rather than omitted: a key
+     * that disappears when a network reports no node makes a consumer's lookup
+     * throw on a condition that is not an error.
+     *
+     * @param sbOut the file being written
+     * @param mapNetwork one network record of the publication
+     */
+    private static void nodes(StringBuilder sbOut, Map<String, Object> mapNetwork) {
+        Object objList = mapNetwork == null ? null : mapNetwork.get("superValidators");
+        if (!(objList instanceof List) || ((List<?>) objList).isEmpty()) {
+            sbOut.append("    super-validators: []\n");
+            return;
+        }
+        sbOut.append("    super-validators:\n");
+        for (Object objNode : (List<?>) objList) {
+            if (!(objNode instanceof Map))
+                continue;
+            Map<String, Object> mapNode = cast(objNode);
+            sbOut.append("      - name: ").append(quote(field(mapNode, "name"))).append('\n');
+            sbOut.append("        version: ").append(quote(field(mapNode, "version"))).append('\n');
+            sbOut.append("        scan: ").append(quote(field(mapNode, "scan"))).append('\n');
+        }
     }
 
 
@@ -158,6 +203,11 @@ public final class Versions {
      * @param textValue the value, or null
      * @return the scalar to write
      */
+    private static String plain(String textValue) {
+        return textValue == null ? "null" : textValue;
+    }
+
+
     private static String quote(String textValue) {
         if (textValue == null)
             return "null";

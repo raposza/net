@@ -31,7 +31,13 @@ import java.util.List;
 public final class Normalize {
 
     private static final List<Normalizer> LST_NORMALIZER = List.of(new ScheduleNormalizer(),
-            new SpliceTagsNormalizer(), new SpliceReleaseNotesNormalizer());
+            new SpliceTagsNormalizer(), new SpliceReleaseNotesNormalizer(),
+            new NetworkInfoNormalizer("sync-global-info-mainnet", "MAINNET", "mainnet"),
+            new NetworkInfoNormalizer("sync-global-info-testnet", "TESTNET", "testnet"),
+            new NetworkInfoNormalizer("sync-global-info-devnet", "DEVNET", "devnet"),
+            new SvVersionsNormalizer("sync-global-sv-versions-mainnet", "MAINNET"),
+            new SvVersionsNormalizer("sync-global-sv-versions-testnet", "TESTNET"),
+            new SvVersionsNormalizer("sync-global-sv-versions-devnet", "DEVNET"));
 
     private static final int LEN_DETAIL = 500;
 

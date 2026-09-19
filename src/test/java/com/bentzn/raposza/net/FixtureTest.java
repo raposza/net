@@ -37,7 +37,7 @@ class FixtureTest {
 
     static final Path DIR_FIXTURES = Path.of("fixtures");
 
-    private static final List<String> LST_SUFFIX_BODY = List.of(".json", ".atom");
+    private static final List<String> LST_SUFFIX_BODY = List.of(".json", ".atom", ".csv");
 
     private static final String SUFFIX_CLAIMS = ".claims.jsonl";
 
