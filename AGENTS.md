@@ -94,17 +94,32 @@ FEED_GITHUB_TOKEN               credential the release call authenticates with,
 ```
 
 The git publication channel mirrors each publication into a repository of three
-files: the whole dataset as one json document, four lines of it a person can
-read, and a README that carries the
-consumer contract because there is nowhere else for it to live. A commit is made
-only when the dataset moved, which is decided over a form of the document with
-the publication id and the creation stamp blanked - those move on every
-publication by design, so a byte comparison would commit every turn and say
-nothing. The committed file carries their real values. Liveness is a branch of
-its own: a repository that is correctly silent looks exactly like one whose
-writer has stopped, so the heartbeat commits a timestamp on a fixed interval and
-never touches the data branch. Failure to push is reported, retried on a later
-turn, and never blocks a publication.
+files. `versions.yml` is the current state, reduced to the values a consumer acts
+on: per network the version scheduled to be running, the minimum in force and the
+next upgrade ahead, plus the latest Splice release that exists. `history.yml` is
+every state that file has held, newest first, each entry a full snapshot of it -
+the accumulated record is the one thing here a reader cannot rebuild from
+anywhere else, so it is published as a file rather than left to a commit log. The
+README carries the consumer contract, because there is nowhere else for it to
+live, and a Fields section stating what each field means, since a field whose
+meaning is guessed breaks a consumer's logic without breaking its parser.
+
+Nothing is written unless the publication was derived from banked observations,
+so an environment that has observed nothing leaves the repository as it was
+rather than committing a file of nulls. A commit is then made only when the
+values MOVED: the comparison is `versions.yml` with its `timestamp` line dropped,
+because that line moves on every publication by design. The committed file
+carries it. Both files are built in memory before either is written, so a history
+file that cannot be read leaves the branch untouched instead of leaving a current
+state with no record behind it - and a history file that does not open with the
+line this code wrote is REFUSED rather than replaced.
+
+The data branch is ordinary git: every change is a commit on top of the last,
+nothing is amended and nothing is force-pushed. Liveness is a branch of its own:
+a repository that is correctly silent looks exactly like one whose writer has
+stopped, so the heartbeat commits a timestamp on a fixed interval and never
+touches the data branch. Failure to push is reported, retried on a later turn,
+and never blocks a publication.
 
 Releases are a separate act from a commit, and the only one a reader can
 subscribe to: GitHub lets a watcher follow releases, and offers nothing at all

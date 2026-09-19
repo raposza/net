@@ -4,6 +4,47 @@
 Releases before 0.2.0 carried no version and no tag; their history is the commit
 log.
 
+## 0.4.0
+
+- BREAKING, the data repository. `state.json` and `versions.txt` are gone. What
+  the repository carries is `versions.yml`, the current state as the values a
+  consumer acts on, and `history.yml`, every state that file has held. A consumer
+  that wants the whole event catalogue reads the api; the repository is the small
+  answer and the long record, and nothing in between.
+- `versions.yml` states, per network, `current` - the version that is scheduled
+  to be running - `minimum`, the minimum version in force, and `scheduled`, the
+  next upgrade ahead as a date and a version or `null`. Beside them
+  `splice-latest`, the highest version the Splice tags endpoint carries, and
+  `timestamp`, which is when the Raposza service emitted the file and nothing
+  else.
+- EVERY VERSION IS A QUOTED STRING. Unquoted, `0.7` is a number to every yaml
+  parser there is, and the minimum version is stated to a minor in some cases.
+  `timestamp` and the scheduled `date` are left unquoted so they load as a
+  timestamp and a date.
+- `history.yml` is a list under one `history:` key, newest first, each entry a
+  full snapshot of `versions.yml` including its timestamp. An entry is added only
+  when a value changes, so consecutive entries are never equal and the first one
+  always states what `versions.yml` states now. A file that does not open with
+  the expected line is refused rather than rewritten: an unreadable history can
+  be repaired by hand, an overwritten one cannot.
+- The data branch is ordinary git again. Nothing is amended and nothing is
+  force-pushed, so the commit log and the files agree about what the feed has
+  said.
+- Nothing is written to the repository at all unless the publication was derived
+  from banked observations. An environment that has observed nothing leaves the
+  files as they were, which is why no value there is ever a placeholder.
+- The change unit is `versions.yml` without its `timestamp` line. The reduced
+  file carries no source health and no per-record stamps, so a poll that banks
+  nothing changes nothing, and the comparison no longer has to hunt repeated
+  publication stamps through a whole document.
+- The data branch holds exactly the three files above and no others. A file
+  belonging to an earlier shape of the publication would otherwise survive its
+  own removal for ever: the working clone carries it, nothing rewrites it, and
+  every commit keeps it. Names beginning with a dot are left alone.
+- The data `README.md` gains a Fields section: what every field in
+  `versions.yml` means, in words, including that `timestamp` is the Raposza
+  timestamp - when the service emitted the file, not when anything changed.
+
 ## 0.3.0
 
 - The published dataset is no longer written by hand. The dataset, the api and

@@ -74,14 +74,14 @@ class PublishTest {
 
 
     @Test
-    void theNetworkSummaryComesFromTheScheduleAndNamesNothingAsRunning() throws Exception {
+    void theNetworkSummaryComesFromTheSchedule() throws Exception {
         List<Object> lstNetwork = Networks.derive(published(), INST_NOW, "pub_test", "2026-09-18T00:00:00Z");
         assertEquals(Networks.LST_NETWORK.size(), lstNetwork.size());
         for (Object objNetwork : lstNetwork) {
             Map<String, Object> mapNetwork = cast(objNetwork);
             assertNull(mapNetwork.get("synchronizer"), "no source this feed reads reports a synchronizer");
             Map<String, Object> mapSplice = cast(mapNetwork.get("splice"));
-            assertNull(mapSplice.get("currentVersion"), "nothing observes what a network is running");
+            assertNull(mapSplice.get("currentVersion"), "the network record carries no currentVersion field");
             assertNotNull(mapSplice.get("scheduledVersion"), mapNetwork.get("network") + " has no scheduled version");
             assertNotNull(mapSplice.get("minimumVersion"), mapNetwork.get("network") + " has no minimum version");
         }
@@ -130,16 +130,57 @@ class PublishTest {
     }
 
 
+    /**
+     * `versions.yml` over the banked bodies at the fixed publication instant.
+     * Every value asserted here is one this suite already derives from a fixture
+     * elsewhere, line for line as the file writes it, so a normalizer change that
+     * moves one of them fails here too. The scheduled block of TestNet and DevNet
+     * is deliberately not pinned: what is ahead for those two moves with the
+     * banked bodies and no other test states it.
+     */
     @Test
-    void theHumanReadableVersionsFileSaysWhatTheDataSays() throws Exception {
-        List<Object> lstEvent = new ArrayList<>(published());
-        lstEvent.addAll(releases());
-        Map<String, Object> mapDs = Dataset.generate("pub_test", INST_NOW,
-                new Dataset.Index(List.of(), lstEvent));
-        assertEquals("MainNet: 0.7.5 (min: 0.7)\n"
-                + "TestNet: 0.8.0 (min: 0.7)\n"
-                + "DevNet: 0.8.1 (min: 0.7)\n"
-                + "Splice latest: 0.8.3\n", Versions.text(mapDs));
+    void thePublishedVersionsFileSaysWhatTheDataSays() throws Exception {
+        String textYaml = Versions.yaml(withReleases());
+        assertTrue(textYaml.startsWith("timestamp: 2026-09-18T00:00:00Z\nnetworks:\n"), textYaml);
+        assertTrue(textYaml.contains("  mainnet:\n"
+                + "    current: \"0.7.5\"\n"
+                + "    minimum: \"0.7\"\n"
+                + "    scheduled:\n"
+                + "      date: 2026-09-21\n"
+                + "      version: \"0.8.0\"\n"), textYaml);
+        assertTrue(textYaml.contains("  testnet:\n"
+                + "    current: \"0.8.0\"\n"
+                + "    minimum: \"0.7\"\n"), textYaml);
+        assertTrue(textYaml.contains("  devnet:\n"
+                + "    current: \"0.8.1\"\n"
+                + "    minimum: \"0.7\"\n"), textYaml);
+        assertTrue(textYaml.endsWith("splice-latest: \"0.8.3\"\n"), textYaml);
+        assertTrue(textYaml.indexOf("  mainnet:") < textYaml.indexOf("  testnet:")
+                && textYaml.indexOf("  testnet:") < textYaml.indexOf("  devnet:"),
+                "the networks are published in one fixed order");
+    }
+
+
+    @Test
+    void theHistoryEntryIsTheWholeVersionsFileReindented() throws Exception {
+        String textYaml = Versions.yaml(withReleases());
+        String textEntry = History.entry(textYaml);
+        assertTrue(textEntry.startsWith("  - timestamp: 2026-09-18T00:00:00Z\n"), textEntry);
+        assertTrue(textEntry.contains("\n    networks:\n"), textEntry);
+        assertTrue(textEntry.contains("\n      mainnet:\n"), textEntry);
+        assertTrue(textEntry.endsWith("\n    splice-latest: \"0.8.3\"\n"), textEntry);
+        assertEquals(textYaml.split("\n").length, textEntry.split("\n").length,
+                "an entry carries every line of the file and no other");
+    }
+
+
+    @Test
+    void theTimestampIsTheOnlyLineTheChangeUnitIgnores() throws Exception {
+        String textYaml = Versions.yaml(withReleases());
+        String textCut = Versions.withoutTimestamp(textYaml);
+        assertFalse(textCut.contains("timestamp:"), textCut);
+        assertEquals(textYaml.length() - "timestamp: 2026-09-18T00:00:00Z\n".length(), textCut.length(),
+                "nothing but that line is dropped");
     }
 
 
@@ -201,6 +242,17 @@ class PublishTest {
             }
         }
         assertTrue(cntReview > 0, "the banked body holds a tag that is not a version");
+    }
+
+
+    /**
+     * The corpus as a publication carrying both the schedule events and the
+     * releases, which is what `versions.yml` is reduced from.
+     */
+    private static Map<String, Object> withReleases() throws Exception {
+        List<Object> lstEvent = new ArrayList<>(published());
+        lstEvent.addAll(releases());
+        return Dataset.generate("pub_test", INST_NOW, new Dataset.Index(List.of(), lstEvent));
     }
 
 

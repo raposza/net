@@ -1,7 +1,7 @@
 <!-- Author Claude/bentzn -->
 # Security
 
-Reviewed 2026-09-18 for v0.3.0.
+Reviewed 2026-09-19 for v0.4.0.
 
 ## Reporting a vulnerability
 
@@ -28,7 +28,9 @@ upload and no administrative surface, and a deployment is expected to put it
 behind a reverse proxy.
 
 It does write outward, to one place that is not a source: the generated data
-repository of its own environment, whose whole contents it produces.
+repository of its own environment, whose whole contents it produces. That
+repository keeps an accumulated record of every state it has published, which is
+the same derived facts over time and carries nothing a source did not state.
 
 That shapes which defects matter most here:
 
@@ -62,9 +64,11 @@ backports.
   design, and losing one instance is an operational matter, not a
   vulnerability.
 - The upstream sources. What they publish is theirs; report it to them.
-- The published values while `metadata.content` reads `EMPTY` or `UNAVAILABLE`.
-  Both say the publication carries no observed event, and nothing served beside
-  them is a statement about any network. While it reads `OBSERVED` they are in
-  scope, and the first item above is what they are in scope for.
+- The values served by the api while `metadata.content` reads `EMPTY` or
+  `UNAVAILABLE`. Both say the publication carries no observed event, and nothing
+  served beside them is a statement about any network. While it reads `OBSERVED`
+  they are in scope, and the first item above is what they are in scope for. The
+  data repository is not written at all in either of the other two states, so
+  everything in it is in scope.
 - Version numbers and field names before 1.0.0, which are not promised to be
   stable.

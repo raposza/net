@@ -8,6 +8,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -24,33 +25,35 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * The git publication channel: the third delivery channel, beside the api and
  * the web page.
  *
- * The repository holds two files and nothing else. One is the whole published
- * dataset as a single json document, so a consumer fetches one url and a reader
- * who arrives with no tooling sees the data itself. The other is the README,
- * which under a two-file repository is the only place the consumer contract can
- * live and therefore carries all of it.
+ * The repository holds three files and nothing else. `versions.yml` is the
+ * current state, the few values a consumer acts on, in a form a person reads
+ * without tooling. `history.yml` is every state it has held, newest first, which
+ * is the record a reader cannot rebuild from anywhere else. The README carries
+ * the consumer contract, because under a repository of this size there is
+ * nowhere else for it to live.
  *
- * A commit is made only when the dataset MOVED. Every publication carries a
- * fresh publication id and creation stamp, so a byte comparison would commit on
- * every turn and say nothing at all; the comparison is made over a form of the
- * document with those two fields blanked, while the file that is committed
- * carries their real values.
+ * A commit is made only when the values MOVED. The timestamp moves on every
+ * publication by design, so the comparison is made over `versions.yml` with that
+ * one line dropped; the file that is committed carries it.
+ *
+ * The data branch is ordinary git. Every change is a commit on top of the last
+ * one, nothing is amended and nothing is force-pushed, so the commit log and the
+ * file agree about what the feed has said.
  *
  * Liveness is a second branch. A repository that is correctly silent looks
  * exactly like a repository whose writer has stopped, so the heartbeat commits a
- * timestamp on a branch of its own at its own interval. The data branch receives
- * real changes only, is never rewritten, and is never touched by the heartbeat.
+ * timestamp on a branch of its own at its own interval, and never touches the
+ * data branch.
  *
  * The commit subject names the publication rather than describing the change. A
  * readable subject is a sentence about what moved, which needs a diff over
- * published events, and nothing publishes events yet.
+ * published events, and nothing derives one.
  *
  * Nothing here can fail a publication: the database and the served dataset are
  * the canonical channel and this is a mirror of it. Every path reports and
@@ -61,17 +64,25 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public final class GitPublish {
 
-    /** The dataset, one document. */
-    public static final String NAME_ARTEFACT = "feed.json";
+    /** The current state, the values a consumer acts on. */
+    public static final String NAME_VERSIONS = "versions.yml";
+
+    /** Every state that file has held, newest first. */
+    public static final String NAME_HISTORY = "history.yml";
 
     /** The consumer contract. */
     public static final String NAME_README = "README.md";
 
-    /** The same facts as the dataset, in four lines a person reads. */
-    public static final String NAME_VERSIONS = "versions.txt";
-
     /** The liveness file, on the heartbeat branch only. */
     public static final String NAME_BEAT = "heartbeat.json";
+
+    /**
+     * What a publication must be made of before anything is written. An
+     * environment that has banked nothing derives no version for any network, and
+     * a file of nulls would read as three networks with nothing scheduled rather
+     * than as an environment with nothing to say.
+     */
+    public static final String CONTENT_OBSERVED = "OBSERVED";
 
     /**
      * The shortest heartbeat interval accepted. A mistyped interval is a commit
@@ -190,16 +201,27 @@ public final class GitPublish {
     }
 
 
+    /**
+     * The data branch. Both files are built in memory before either is written,
+     * so a history file that cannot be read leaves the whole branch untouched
+     * rather than a current state with no record behind it.
+     *
+     * @param mapDs the corpus that was just published
+     */
     private void data(Map<String, Object> mapDs) throws IOException, InterruptedException {
+        if (!CONTENT_OBSERVED.equals(String.valueOf(Dataset.meta(mapDs).get("content"))))
+            return;
         Path dirTree = spec.dirWork().resolve("data");
         ensure(dirTree, spec.nameBranchData());
-        byte[] bytesNew = json(mapDs);
-        Path fileArtefact = dirTree.resolve(NAME_ARTEFACT);
-        if (!same(fileArtefact, bytesNew)) {
-            Files.write(fileArtefact, bytesNew);
-            Files.write(dirTree.resolve(NAME_README), readme(mapDs).getBytes(StandardCharsets.UTF_8));
-            Files.write(dirTree.resolve(NAME_VERSIONS),
-                    Versions.text(mapDs).getBytes(StandardCharsets.UTF_8));
+        String textVersions = Versions.yaml(mapDs);
+        Path fileVersions = dirTree.resolve(NAME_VERSIONS);
+        if (!History.same(fileVersions, textVersions)) {
+            String textHistory = History.prepend(dirTree.resolve(NAME_HISTORY), textVersions);
+            String textReadme = readme(mapDs);
+            Files.write(fileVersions, textVersions.getBytes(StandardCharsets.UTF_8));
+            Files.write(dirTree.resolve(NAME_HISTORY), textHistory.getBytes(StandardCharsets.UTF_8));
+            Files.write(dirTree.resolve(NAME_README), textReadme.getBytes(StandardCharsets.UTF_8));
+            prune(dirTree);
             must(dirTree, "git", "add", "-A");
             if (exec(dirTree, "git", "diff", "--cached", "--quiet").code() != 0) {
                 must(dirTree, "git", "commit", "-q", "-m", "publication " + idOf(mapDs));
@@ -210,6 +232,37 @@ public final class GitPublish {
             return;
         if (push(dirTree, spec.nameBranchData())) {
             msPushed = System.currentTimeMillis();
+        }
+    }
+
+
+    /**
+     * The branch holds exactly the files this class writes and no others.
+     *
+     * Without this, a file belonging to an earlier shape of the publication
+     * survives its own removal for ever: the working clone is checked out from
+     * the remote and carries it, nothing here rewrites it, `git add -A` sees no
+     * change in it, and every commit keeps it. A reader then finds two documents,
+     * one of them frozen at the moment the code stopped writing it, and no way to
+     * tell from the repository which is which.
+     *
+     * Names beginning with a dot are left alone: `.git` is the branch itself, and
+     * a repository setting a maintainer added by hand is not this code's to
+     * delete.
+     *
+     * @param dirTree the working clone of the data branch
+     */
+    private static void prune(Path dirTree) throws IOException {
+        List<String> lstKeep = List.of(NAME_VERSIONS, NAME_HISTORY, NAME_README);
+        try (DirectoryStream<Path> strmFile = Files.newDirectoryStream(dirTree)) {
+            for (Path fileOne : strmFile) {
+                String nameOne = fileOne.getFileName().toString();
+                if (nameOne.startsWith(".") || !Files.isRegularFile(fileOne) || lstKeep.contains(nameOne))
+                    continue;
+                Files.delete(fileOne);
+                System.out.println("git publication: removed " + nameOne
+                        + ", which this publication does not write");
+            }
         }
     }
 
@@ -297,73 +350,6 @@ public final class GitPublish {
     }
 
 
-    /**
-     * The change unit. The publication id and the creation stamp move on every
-     * turn by design, so they are blanked before the comparison; everything
-     * else, including the source health block, counts as a change.
-     *
-     * @return true when the file on disk says the same thing as the bytes
-     */
-    private static boolean same(Path fileOld, byte[] bytesNew) {
-        if (!Files.isRegularFile(fileOld))
-            return false;
-        try {
-            return canonical(Files.readAllBytes(fileOld)).equals(canonical(bytesNew));
-        }
-        catch (IOException e) {
-            return false;
-        }
-    }
-
-
-    private static String canonical(byte[] bytesJson) throws IOException {
-        Map<String, Object> mapDs = MAPPER.readValue(bytesJson, new TypeReference<Map<String, Object>>() {
-        });
-        Map<String, Object> mapMeta = Dataset.meta(mapDs);
-        return MAPPER.writeValueAsString(blank(mapDs, String.valueOf(mapMeta.get("publicationId")),
-                String.valueOf(mapMeta.get("createdAt"))));
-    }
-
-
-    /**
-     * Blanks every value that is the publication's own id or its creation
-     * stamp, wherever in the document it appears. Both are repeated through the
-     * corpus - on every network, on every event - so blanking the metadata
-     * block alone leaves a copy in most records and every publication then
-     * reads as a change: measured on DEV as one commit a minute.
-     *
-     * Matching by VALUE rather than by field name keeps this true as the
-     * corpus grows. A timestamp that carries a real moment differs from the
-     * creation stamp and counts as a change, with no list of field names to
-     * keep current. The cost is that a real moment falling in the same second
-     * as the publication is not seen until the next one.
-     *
-     * @param objAny a node of the parsed document, edited in place
-     * @param idPublication the publication id to blank
-     * @param stampCreated the creation stamp to blank
-     * @return the node
-     */
-    private static Object blank(Object objAny, String idPublication, String stampCreated) {
-        if (objAny instanceof Map) {
-            Map<String, Object> mapNode = cast(objAny);
-            for (Map.Entry<String, Object> entOne : mapNode.entrySet()) {
-                entOne.setValue(blank(entOne.getValue(), idPublication, stampCreated));
-            }
-            return mapNode;
-        }
-        if (objAny instanceof List) {
-            List<Object> lstNode = castList(objAny);
-            for (int cntItem = 0; cntItem < lstNode.size(); cntItem++) {
-                lstNode.set(cntItem, blank(lstNode.get(cntItem), idPublication, stampCreated));
-            }
-            return lstNode;
-        }
-        if (objAny instanceof String && (objAny.equals(idPublication) || objAny.equals(stampCreated)))
-            return "";
-        return objAny;
-    }
-
-
     private static byte[] json(Map<String, Object> mapAny) throws IOException {
         return (MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(mapAny) + "\n")
                 .getBytes(StandardCharsets.UTF_8);
@@ -399,7 +385,7 @@ public final class GitPublish {
      * separate things a consumer depends on are stated here because there is
      * nowhere else for them to be stated: the path, the field names, and the
      * meaning of a field. The third is the one that breaks logic without
-     * breaking a parser, so it is named before either of the others.
+     * breaking a parser, so it has a section of its own.
      *
      * @param mapDs the corpus being committed
      * @return the README text
@@ -409,8 +395,8 @@ public final class GitPublish {
         sbOut.append("# Raposza Network Operations Feed - data\n\n");
         sbOut.append("BaseNet can be wired to this feed with a cron job, so that a local\n");
         sbOut.append("customization is tested against what the networks are scheduled to run\n");
-        sbOut.append("before it becomes a problem. Pull `").append(NAME_VERSIONS).append("` or `")
-                .append(NAME_ARTEFACT).append("` on a schedule, compare it\n");
+        sbOut.append("before it becomes a problem. Pull `").append(NAME_VERSIONS).append("` on a schedule,")
+                .append(" compare it\n");
         sbOut.append("with what your own environment is pinned to, and fail your build when the\n");
         sbOut.append("two have drifted apart. This is a data feed, not a dashboard.\n\n");
         sbOut.append("Machine-generated. Nothing in this repository is edited by hand, and a wrong\n");
@@ -421,9 +407,10 @@ public final class GitPublish {
             sbOut.append("rehearsed, and its contents are not a statement about any network.\n");
         }
         sbOut.append("\n## Files\n\n");
-        sbOut.append("- `").append(NAME_ARTEFACT).append("` - the published dataset, one document.\n");
-        sbOut.append("- `").append(NAME_VERSIONS).append("` - the same facts for a person, four lines.\n");
+        sbOut.append("- `").append(NAME_VERSIONS).append("` - the current state. Fetch this one.\n");
+        sbOut.append("- `").append(NAME_HISTORY).append("` - every state it has held, newest first.\n");
         sbOut.append("- `").append(NAME_README).append("` - this file.\n");
+        fields(sbOut);
         sbOut.append("\n## Provenance\n\n");
         sbOut.append("Where this comes from, how often, and how it is put together. No value here\n");
         sbOut.append("is typed by a human.\n\n");
@@ -442,41 +429,70 @@ public final class GitPublish {
         sbOut.append("change record. A record that disappears from a later body is marked\n");
         sbOut.append("withdrawn rather than cancelled, because upstream marks a cancellation and\n");
         sbOut.append("keeps the record, and a body that upstream merely re-sorted changes nothing.\n");
-        sbOut.append("Every published event names the source, the observation and the normalizer it\n");
-        sbOut.append("came from.\n\n");
-        sbOut.append("EVERY NETWORK VERSION HERE IS SCHEDULED, NOT RUNNING. No source this feed\n");
-        sbOut.append("reads reports what a network is currently running, so what you get is what\n");
-        sbOut.append("the operators have said they intend to do, and a date that has arrived is not\n");
-        sbOut.append("evidence that it happened. Per network, `").append(NAME_VERSIONS)
-                .append("` shows the latest\n");
-        sbOut.append("scheduled version whose date has arrived and the minimum version in force;\n");
-        sbOut.append("the minimum is often stated upstream to a minor version only, so `0.7` there\n");
-        sbOut.append("means `0.7.x`. The last line is different in kind: it is the highest version\n");
-        sbOut.append("the tags endpoint carries, which says a release EXISTS and says nothing about\n");
-        sbOut.append("any network taking it. A tag carries no date, so these records have none.\n");
+        sbOut.append("The full event catalogue, with the source, the observation and the normalizer\n");
+        sbOut.append("behind each event, is served by the api; it is not in this repository.\n");
         sbOut.append("\n## Stability\n\n");
         sbOut.append("The Canton networks are still evolving fast. We try our best to keep the\n");
         sbOut.append("interface and the schema stable and coherent, but if something changes\n");
         sbOut.append("upstream we may have to change them too.\n\n");
-        sbOut.append("`metadata.content` states what the values in this file are: OBSERVED when\n");
-        sbOut.append("they were derived from banked observations, EMPTY when this environment has\n");
-        sbOut.append("banked none, and UNAVAILABLE when the index could not be read.\n");
+        sbOut.append("These files are written only from banked observations. An environment that\n");
+        sbOut.append("has observed nothing writes nothing at all, so a value here is never a\n");
+        sbOut.append("placeholder and an empty field is never an outage.\n");
         sbOut.append("\n## Freshness\n\n");
-        sbOut.append("`metadata.publicationId` and `metadata.createdAt` identify the publication.\n");
-        sbOut.append("They move on every publication, so this repository is committed only when the\n");
-        sbOut.append("rest of the document changes: no commit here means nothing changed, and the\n");
-        sbOut.append("stamps you read are those of the last change, not of the last check.\n");
+        sbOut.append("`timestamp` moves on every publication, so it is not what this repository is\n");
+        sbOut.append("committed on: a commit is made when one of the values above it changes. No\n");
+        sbOut.append("commit means nothing changed, and the timestamp you read is the one of the\n");
+        sbOut.append("last change rather than of the last check. The heartbeat branch is what says\n");
+        sbOut.append("the writer is still running.\n");
         sbOut.append("\n## Branches\n\n");
-        sbOut.append("- `").append(spec.nameBranchData()).append("` - the data. One commit per real change, never rewritten.\n");
-        sbOut.append("- `").append(spec.nameBranchBeat()).append("` - liveness only. A timestamp and the publisher's uptime in\n");
+        sbOut.append("- `").append(spec.nameBranchData()).append("` - the data. One commit per change,")
+                .append(" ordinary history, nothing rewritten.\n");
+        sbOut.append("- `").append(spec.nameBranchBeat()).append("` - liveness only. A timestamp and the")
+                .append(" publisher's uptime in\n");
         sbOut.append("  hours, committed on a fixed interval whether anything changed or not, so\n");
         sbOut.append("  that a silent data branch can be told apart from a writer that has stopped.\n");
         sbOut.append("  It carries no data. Read nothing into its contents beyond the fact that the\n");
         sbOut.append("  writer was alive at that moment.\n");
-        sbOut.append("\n## Content of this publication\n\n");
-        sbOut.append("`metadata.content` is `").append(String.valueOf(Dataset.meta(mapDs).get("content")))
-                .append("`.\n");
         return sbOut.toString();
+    }
+
+
+    /**
+     * What every field in `versions.yml` means. A consumer that reads a field
+     * name and guesses is the failure this section exists to stop, so each one is
+     * stated in words rather than left to the name.
+     *
+     * @param sbOut the README being built
+     */
+    private void fields(StringBuilder sbOut) {
+        sbOut.append("\n## Fields\n\n");
+        sbOut.append("`timestamp` is the RAPOSZA TIMESTAMP: when the file was emitted by the\n");
+        sbOut.append("Raposza service. It is not an upstream time, and it is not when any of the\n");
+        sbOut.append("values below it changed.\n\n");
+        sbOut.append("Under `networks`, per network:\n\n");
+        sbOut.append("- `current` - the version that is scheduled to be running. It is the latest\n");
+        sbOut.append("  confirmed upgrade whose date has arrived. The schedule is what the network\n");
+        sbOut.append("  operators have published; no source this feed reads reports back what a\n");
+        sbOut.append("  network has actually loaded.\n");
+        sbOut.append("- `minimum` - the minimum version in force. Upstream sometimes states this to\n");
+        sbOut.append("  a minor version only, so `\"0.7\"` here means `0.7.x`.\n");
+        sbOut.append("- `scheduled` - the next upgrade still ahead, as `date` and `version`, or\n");
+        sbOut.append("  `null` where none is scheduled. An entry that upstream has cancelled is not\n");
+        sbOut.append("  published here; one it lists as tentative is.\n\n");
+        sbOut.append("`splice-latest` is the highest version the Splice tags endpoint carries. It is\n");
+        sbOut.append("different in kind from the three above: it says a release EXISTS, and says\n");
+        sbOut.append("nothing about any network taking it. A tag carries no date, so this value has\n");
+        sbOut.append("none.\n\n");
+        sbOut.append("Every version is a QUOTED STRING. Unquoted, `0.7` is a number to every yaml\n");
+        sbOut.append("parser there is. `timestamp` and `date` are left unquoted so that they load as\n");
+        sbOut.append("a timestamp and a date.\n\n");
+        sbOut.append("`").append(NAME_HISTORY).append("` is a list under one `history:` key, newest")
+                .append(" first. Each entry is a\n");
+        sbOut.append("full snapshot of `").append(NAME_VERSIONS).append("` as it stood, its timestamp")
+                .append(" included, so the\n");
+        sbOut.append("first entry always states what `").append(NAME_VERSIONS).append("` states now. An")
+                .append(" entry is added when a\n");
+        sbOut.append("value changes and at no other time, so consecutive entries are never equal.\n");
     }
 
 
@@ -729,18 +745,6 @@ public final class GitPublish {
 
     private static String text(Exec exec) {
         return new String(exec.bytesOut(), StandardCharsets.UTF_8);
-    }
-
-
-    @SuppressWarnings("unchecked")
-    private static Map<String, Object> cast(Object objAny) {
-        return (Map<String, Object>) objAny;
-    }
-
-
-    @SuppressWarnings("unchecked")
-    private static List<Object> castList(Object objAny) {
-        return (List<Object>) objAny;
     }
 
 
