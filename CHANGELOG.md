@@ -4,6 +4,17 @@
 Releases before 0.2.0 carried no version and no tag; their history is the commit
 log.
 
+## 0.6.0
+
+- The published source list carries the `url` of each source. It was id,
+  publisher, authority and cadence, which names a source without saying what was
+  fetched. The field is added to `/sources`, to the dataset's `sources.json`, and
+  to the registry list the api serves before a publication exists. Nothing is
+  removed or renamed.
+- The README of the data repository renders that url as a link under every source
+  line, so a reader checking a published value against upstream can open the
+  exact endpoint that was polled rather than a host name.
+
 ## 0.5.1
 
 - The Super Validator rosters of TestNet and DevNet were published almost empty.

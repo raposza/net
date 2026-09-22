@@ -126,6 +126,7 @@ public final class Sources {
             lstOut.add(Dataset.map(
                     "id", def.id(),
                     "publisher", def.publisher(),
+                    "url", def.url(),
                     "authority", def.sourceAuthority(),
                     "pollSeconds", Integer.valueOf(def.pollSeconds()),
                     "enabled", Boolean.valueOf(def.enabled()),

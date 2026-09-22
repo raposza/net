@@ -523,6 +523,9 @@ public final class GitPublish {
     /**
      * The source list of the publication itself, so the cadences stated here are
      * the ones the build actually runs on and cannot drift from the registry.
+     * The url is rendered as a link: a reader who wants to check a value against
+     * upstream must be able to open the exact endpoint that was polled, and a
+     * host name alone does not say which one that is.
      *
      * @param sbOut the README being built
      * @param mapDs the corpus being committed
@@ -535,9 +538,17 @@ public final class GitPublish {
                 if (!(objOne instanceof Map))
                     continue;
                 Map<?, ?> mapOne = (Map<?, ?>) objOne;
+                Object objUrl = mapOne.get("url");
+                String textUrl = objUrl == null ? "" : String.valueOf(objUrl).trim();
                 sbOut.append("- `").append(mapOne.get("id")).append("` - ").append(mapOne.get("publisher"))
                         .append(", authority ").append(mapOne.get("authority"))
-                        .append(", polled every ").append(mapOne.get("pollSeconds")).append(" s\n");
+                        .append(", polled every ").append(mapOne.get("pollSeconds")).append(" s");
+                if (textUrl.isEmpty()) {
+                    sbOut.append(", url not published with this source\n");
+                }
+                else {
+                    sbOut.append("\n  [").append(textUrl).append("](").append(textUrl).append(")\n");
+                }
                 cntListed++;
             }
         }

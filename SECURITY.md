@@ -1,7 +1,7 @@
 <!-- Author Claude/bentzn -->
 # Security
 
-Reviewed 2026-09-19 for v0.5.1.
+Reviewed 2026-09-22 for v0.6.0.
 
 ## Reporting a vulnerability
 

@@ -220,6 +220,7 @@ public final class Dataset {
                 lstOut.add(map(
                         "id", def.id(),
                         "publisher", def.publisher(),
+                        "url", def.url(),
                         "authority", def.sourceAuthority(),
                         "pollSeconds", Integer.valueOf(def.pollSeconds()),
                         "enabled", Boolean.valueOf(def.enabled()),
