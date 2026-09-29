@@ -42,6 +42,9 @@ GET /api/v1/events/{id}
 GET /api/v1/sources
 ```
 
+The whole surface is described as an OpenAPI 3.1 document, served at
+`/openapi.json`.
+
 Every response carries the publication it belongs to, in the body and in the
 `X-Raposza-Publication` header, so two consumers can establish they read the
 same state.

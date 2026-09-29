@@ -4,6 +4,15 @@
 Releases before 0.2.0 carried no version and no tag; their history is the commit
 log.
 
+## 0.6.2
+
+- An OpenAPI 3.1 document of the `/api/v1` surface, served at `/openapi.json`:
+  the six read endpoints, the `X-Raposza-Publication` header, the 404 body, and
+  the status, network, event and source records. Enumerations are closed only
+  where the code fixes the values; fields whose values come from upstream are
+  strings with examples. The web page footer links to it, and `test.sh` checks
+  that it is served.
+
 ## 0.6.1
 
 - The web page shows the latest Splice release at the top: the highest version

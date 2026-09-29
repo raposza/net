@@ -56,6 +56,7 @@ chk mainnet  /api/v1/networks/mainnet             'scheduledVersion'
 chk events   /api/v1/events                       '"events"'
 chk sources  /api/v1/sources                      'canton-foundation-cips'
 chk webpage  /index.html                          'Raposza'
+chk openapi  /openapi.json                        '"openapi": "3.1.0"'
 
 # Nothing observes what a network runs, and nothing reports a synchronizer, so
 # neither may reappear in a published network however plausible the field looks.

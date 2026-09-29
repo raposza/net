@@ -1,0 +1,858 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Raposza Network Operations Feed API",
+    "version": "1",
+    "summary": "Read-only view of what is deployed and scheduled on the Canton Network, and where every fact came from.",
+    "description": "Every endpoint is a read of the current publication. Nothing is written through this API: there is no write route, no authentication and no session. Every response to a path under /api/ carries the identifier of the publication it was served from, in the X-Raposza-Publication header and, for list endpoints, in the body, so two readers can establish that they saw the same state.\n\nBefore the first publication exists the api serves a corpus generated at startup: no events, three networks with null values, and the source list with state UNKNOWN. metadata.content, read from /api/v1/status, says which case applies.",
+    "license": {
+      "name": "Apache-2.0",
+      "identifier": "Apache-2.0"
+    },
+    "x-copyright": "Copyright 2026 bentzn",
+    "x-spdx": "SPDX-License-Identifier: Apache-2.0",
+    "x-author": "Author Claude/bentzn"
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "The host serving this document"
+    }
+  ],
+  "paths": {
+    "/api/v1/status": {
+      "get": {
+        "operationId": "status",
+        "summary": "Service state and the current publication",
+        "responses": {
+          "200": {
+            "description": "Service state",
+            "headers": {
+              "X-Raposza-Publication": {
+                "$ref": "#/components/headers/X-Raposza-Publication"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/networks": {
+      "get": {
+        "operationId": "networks",
+        "summary": "All three networks",
+        "description": "Always DEVNET, TESTNET and MAINNET, in that order, with null values where nothing states a value.",
+        "responses": {
+          "200": {
+            "description": "The networks",
+            "headers": {
+              "X-Raposza-Publication": {
+                "$ref": "#/components/headers/X-Raposza-Publication"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "publicationId",
+                    "networks"
+                  ],
+                  "properties": {
+                    "publicationId": {
+                      "type": "string",
+                      "description": "Publication the records come from"
+                    },
+                    "networks": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Network"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/networks/{network}": {
+      "get": {
+        "operationId": "network",
+        "summary": "One network",
+        "parameters": [
+          {
+            "name": "network",
+            "in": "path",
+            "required": true,
+            "description": "Network name, matched case-insensitively",
+            "schema": {
+              "type": "string",
+              "examples": [
+                "mainnet",
+                "TESTNET",
+                "devnet"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The network",
+            "headers": {
+              "X-Raposza-Publication": {
+                "$ref": "#/components/headers/X-Raposza-Publication"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Network"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No record with that identifier in the current publication",
+            "headers": {
+              "X-Raposza-Publication": {
+                "$ref": "#/components/headers/X-Raposza-Publication"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/events": {
+      "get": {
+        "operationId": "events",
+        "summary": "Every published event",
+        "description": "All events, including those whose date has passed and those withdrawn upstream (withdrawn: true). No query parameters are read.",
+        "responses": {
+          "200": {
+            "description": "The events",
+            "headers": {
+              "X-Raposza-Publication": {
+                "$ref": "#/components/headers/X-Raposza-Publication"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "publicationId",
+                    "events"
+                  ],
+                  "properties": {
+                    "publicationId": {
+                      "type": "string",
+                      "description": "Publication the records come from"
+                    },
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Event"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/events/{id}": {
+      "get": {
+        "operationId": "event",
+        "summary": "One event",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Event identifier, matched exactly",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The event",
+            "headers": {
+              "X-Raposza-Publication": {
+                "$ref": "#/components/headers/X-Raposza-Publication"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Event"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No record with that identifier in the current publication",
+            "headers": {
+              "X-Raposza-Publication": {
+                "$ref": "#/components/headers/X-Raposza-Publication"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sources": {
+      "get": {
+        "operationId": "sources",
+        "summary": "The sources and their health",
+        "responses": {
+          "200": {
+            "description": "The sources",
+            "headers": {
+              "X-Raposza-Publication": {
+                "$ref": "#/components/headers/X-Raposza-Publication"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "publicationId",
+                    "sources"
+                  ],
+                  "properties": {
+                    "publicationId": {
+                      "type": "string",
+                      "description": "Publication the records come from"
+                    },
+                    "sources": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Source"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "headers": {
+      "X-Raposza-Publication": {
+        "description": "Identifier of the publication the response was served from",
+        "schema": {
+          "type": "string",
+          "examples": [
+            "pub_20260929T172255Z"
+          ]
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "error",
+          "message"
+        ],
+        "properties": {
+          "error": {
+            "type": "string",
+            "enum": [
+              "NOT_FOUND"
+            ]
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "Status": {
+        "type": "object",
+        "properties": {
+          "service": {
+            "type": "string",
+            "const": "raposza-network-feed"
+          },
+          "environment": {
+            "type": "string",
+            "description": "Environment name as configured on the host; local when unset",
+            "examples": [
+              "prd",
+              "rc",
+              "stg",
+              "dev",
+              "local"
+            ]
+          },
+          "buildId": {
+            "type": "string",
+            "description": "Build serving the request; unknown when unset",
+            "examples": [
+              "20260929-f144635"
+            ]
+          },
+          "content": {
+            "type": "string",
+            "description": "What the publication is made of: OBSERVED, the index was read and carried events; EMPTY, the index was read and carried none; UNAVAILABLE, the index could not be read",
+            "enum": [
+              "OBSERVED",
+              "EMPTY",
+              "UNAVAILABLE"
+            ]
+          },
+          "publicationId": {
+            "type": "string",
+            "examples": [
+              "pub_20260929T172255Z"
+            ]
+          },
+          "publishedAt": {
+            "type": "string",
+            "description": "When the publication was created, UTC, second precision",
+            "format": "date-time"
+          },
+          "publicationAgeSeconds": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Seconds since publishedAt; -1 when publishedAt cannot be parsed"
+          },
+          "uptimeSeconds": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Seconds since this api process started"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Source"
+            }
+          }
+        }
+      },
+      "Network": {
+        "type": "object",
+        "properties": {
+          "network": {
+            "type": "string",
+            "enum": [
+              "DEVNET",
+              "TESTNET",
+              "MAINNET"
+            ]
+          },
+          "splice": {
+            "type": "object",
+            "description": "What the SV Operations Schedule states. Scheduled is not running: a date that has arrived is not evidence that the upgrade happened.",
+            "properties": {
+              "scheduledVersion": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The latest CONFIRMED NETWORK_UPGRADE that carries a version and whose date is on or before the publication's UTC date"
+              },
+              "scheduledPrecision": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "scheduledFrom": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "ISO date",
+                "format": "date"
+              },
+              "scheduledEventId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "minimumVersion": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The latest MINIMUM_SPLICE_VERSION that is not cancelled, carries a version and has arrived. Upstream writes it as 0.7.x, so it is published at MINOR precision"
+              },
+              "minimumPrecision": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "minimumFrom": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "ISO date",
+                "format": "date"
+              },
+              "minimumEventId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "next": {
+            "type": "object",
+            "description": "The earliest NETWORK_UPGRADE that is not cancelled and whose date is still ahead",
+            "properties": {
+              "eventId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "version": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "status": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "examples": [
+                  "CONFIRMED",
+                  "TENTATIVE"
+                ]
+              },
+              "from": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "ISO date",
+                "format": "date"
+              }
+            }
+          },
+          "deployment": {
+            "type": "object",
+            "description": "What the network reports it is RUNNING, read from its deployment endpoint. Every field null where nothing reports one. Identifiers are published as strings.",
+            "properties": {
+              "version": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "precision": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "svVersion": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "migrationId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "serialId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "chainIdSuffix": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "successorVersion": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "legacyVersion": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "eventId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "superValidators": {
+            "type": "array",
+            "description": "Every Super Validator node with the version it reports, ordered by name. Empty where none is reported.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "version": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "scan": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Scan url the node publishes"
+                },
+                "eventId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          },
+          "publicationId": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Event": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schemaVersion": {
+            "type": "integer",
+            "const": 1
+          },
+          "kind": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "examples": [
+              "NETWORK_UPGRADE",
+              "MINIMUM_SPLICE_VERSION",
+              "NETWORK_DEPLOYMENT",
+              "SV_NODE",
+              "SOFTWARE_RELEASE"
+            ]
+          },
+          "network": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Null for an event that belongs to no network, such as a software release",
+            "examples": [
+              "MAINNET"
+            ]
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "examples": [
+              "CONFIRMED",
+              "TENTATIVE",
+              "CANCELLED"
+            ]
+          },
+          "withdrawn": {
+            "type": "boolean",
+            "description": "True when the record is no longer present upstream. A withdrawn event states nothing and is kept for history"
+          },
+          "effective": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "ISO date",
+                "format": "date"
+              },
+              "to": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "precision": {
+                "type": "string",
+                "description": "DATE when a date was read, UNKNOWN otherwise",
+                "enum": [
+                  "DATE",
+                  "UNKNOWN"
+                ]
+              }
+            }
+          },
+          "version": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "precision": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "change": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "upstream": {
+            "type": "object",
+            "description": "The source's own public record identifier",
+            "properties": {
+              "type": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "ref": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "commit_sha": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "commit_time": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Time of the commit behind a release tag. Not when the version became available"
+          },
+          "deployment": {
+            "type": "object",
+            "properties": {
+              "svVersion": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "migrationId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "serialId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "chainIdSuffix": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "successorVersion": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "legacyVersion": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "scan_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "revision": {
+            "type": "integer"
+          },
+          "firstObservedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "lastBankedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "provenance": {
+            "type": "array",
+            "description": "One record per source that described the event",
+            "items": {
+              "type": "object",
+              "properties": {
+                "sourceId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "observationId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "normalizer": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "Source": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "examples": [
+              "canton-foundation-sv-operations-schedule"
+            ]
+          },
+          "publisher": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "description": "The exact endpoint that is polled"
+          },
+          "authority": {
+            "type": "string",
+            "examples": [
+              "OFFICIAL",
+              "OFFICIAL_PROJECT",
+              "GOVERNANCE"
+            ]
+          },
+          "pollSeconds": {
+            "type": "integer"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "state": {
+            "type": "string",
+            "description": "Collector state. UNKNOWN where the index holds no row for the source",
+            "examples": [
+              "IDLE",
+              "HEALTHY",
+              "DEGRADED",
+              "UNKNOWN"
+            ]
+          },
+          "lastSuccessAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  }
+}
