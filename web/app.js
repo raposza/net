@@ -90,49 +90,11 @@ function renderNetworks(data) {
   });
 }
 
-/* Versions compare segment by segment as numbers, as the dataset does:
- * compared as text, 0.10.4 sorts below 0.8.2. A segment that is not a number
- * counts as 0, the same rule the publisher applies. */
-function part(arrPart, posPart) {
-  if (posPart >= arrPart.length) {
-    return 0;
-  }
-  const text = arrPart[posPart];
-  return /^[+-]?[0-9]+$/.test(text) ? parseInt(text, 10) : 0;
-}
-
-function compareVersions(verLeft, verRight) {
-  const arrLeft = verLeft.split(".");
-  const arrRight = verRight.split(".");
-  const cntPart = Math.max(arrLeft.length, arrRight.length);
-  for (let posPart = 0; posPart < cntPart; posPart++) {
-    const nLeft = part(arrLeft, posPart);
-    const nRight = part(arrRight, posPart);
-    if (nLeft !== nRight) {
-      return nLeft < nRight ? -1 : 1;
-    }
-  }
-  return 0;
-}
-
-/* The highest SOFTWARE_RELEASE the events carry, withdrawn ones excluded --
- * the same derivation as splice-latest in the published versions.yml. */
+/* The highest Splice release that exists, as the api derives it. A release
+ * existing is not a network running it. */
 function renderLatest(data) {
-  let verBest = null;
-  (data.events || []).forEach(function (e) {
-    if (e.kind !== "SOFTWARE_RELEASE" || String(e.withdrawn) === "true") {
-      return;
-    }
-    const value = e.version && e.version.value;
-    if (value === null || value === undefined) {
-      return;
-    }
-    const verOne = String(value);
-    if (verBest === null || compareVersions(verOne, verBest) > 0) {
-      verBest = verOne;
-    }
-  });
-  document.getElementById("latest").textContent = verBest === null ? "-" : verBest;
+  const ver = data.spliceLatest;
+  document.getElementById("latest").textContent = ver === null || ver === undefined ? "-" : ver;
 }
 
 /* The id links to the exact endpoint that was polled, so a reader can check a
@@ -192,15 +154,14 @@ function renderStatus(status) {
 
 async function load() {
   try {
-    const [status, networks, events, sources] = await Promise.all([
+    const [status, networks, sources] = await Promise.all([
       get("/status"),
       get("/networks"),
-      get("/events"),
       get("/sources")
     ]);
     renderStatus(status);
     renderNetworks(networks);
-    renderLatest(events);
+    renderLatest(networks);
     renderSources(sources);
   }
   catch (err) {

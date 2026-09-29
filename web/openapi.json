@@ -47,7 +47,7 @@
       "get": {
         "operationId": "networks",
         "summary": "All three networks",
-        "description": "Always DEVNET, TESTNET and MAINNET, in that order, with null values where nothing states a value.",
+        "description": "Always DEVNET, TESTNET and MAINNET, in that order, with null values where nothing states a value, beside the latest Splice release that exists.",
         "responses": {
           "200": {
             "description": "The networks",
@@ -62,12 +62,23 @@
                   "type": "object",
                   "required": [
                     "publicationId",
+                    "spliceLatest",
                     "networks"
                   ],
                   "properties": {
                     "publicationId": {
                       "type": "string",
                       "description": "Publication the records come from"
+                    },
+                    "spliceLatest": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "The highest Splice release the Splice tags endpoint carries, withdrawn tags excluded, compared segment by segment as numbers. Not per network: a release existing is not a network running it. Null where nothing states one.",
+                      "examples": [
+                        "0.8.4"
+                      ]
                     },
                     "networks": {
                       "type": "array",

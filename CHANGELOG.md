@@ -4,6 +4,18 @@
 Releases before 0.2.0 carried no version and no tag; their history is the commit
 log.
 
+## 0.6.3
+
+- `GET /api/v1/networks` carries `spliceLatest` beside the network list: the
+  highest Splice release the tags endpoint carries, derived as `splice-latest` in
+  the data repository is. It is not repeated per network. Additive; nothing is
+  removed or renamed.
+- The web page reads the latest release from that field and no longer fetches
+  `/api/v1/events`.
+- `/api.html` browses the api with Swagger UI over `/openapi.json`. Swagger UI is
+  served from a vendored copy under `web/vendor/swagger-ui/` with its licence,
+  version and a `SHA256SUMS`; nothing is loaded from a third party.
+
 ## 0.6.2
 
 - An OpenAPI 3.1 document of the `/api/v1` surface, served at `/openapi.json`:

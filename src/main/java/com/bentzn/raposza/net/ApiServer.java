@@ -82,9 +82,16 @@ public final class ApiServer {
     }
 
 
+    /**
+     * The three networks, beside the latest Splice release that exists. The
+     * release is not a property of any one network, so it sits beside the list
+     * rather than in each record.
+     */
     private static void networks(Context ctx) {
         Map<String, Object> mapDs = current();
-        ctx.json(Dataset.map("publicationId", publicationId(mapDs), "networks", mapDs.get("networks")));
+        ctx.json(Dataset.map("publicationId", publicationId(mapDs),
+                "spliceLatest", Versions.latest(mapDs),
+                "networks", mapDs.get("networks")));
     }
 
 

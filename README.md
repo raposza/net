@@ -43,7 +43,9 @@ GET /api/v1/sources
 ```
 
 The whole surface is described as an OpenAPI 3.1 document, served at
-`/openapi.json`.
+`/openapi.json`, and browsable at `/api.html`. That page is Swagger UI, served
+from a copy under `web/vendor/swagger-ui/` carrying its own licence and a
+`SHA256SUMS` of every file; nothing is loaded from a third party.
 
 Every response carries the publication it belongs to, in the body and in the
 `X-Raposza-Publication` header, so two consumers can establish they read the

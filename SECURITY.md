@@ -1,7 +1,7 @@
 <!-- Author Claude/bentzn -->
 # Security
 
-Reviewed 2026-09-29 for v0.6.2.
+Reviewed 2026-09-29 for v0.6.3.
 
 ## Reporting a vulnerability
 
@@ -26,6 +26,12 @@ One unauthenticated HTTP port is everything that listens. It answers the
 documented read endpoints and serves the web assets; there is no write route, no
 upload and no administrative surface, and a deployment is expected to put it
 behind a reverse proxy.
+
+Not every web asset is ours. The api browser at `/api.html` is Swagger UI,
+served from a copy in `web/vendor/swagger-ui/` that records its version, the
+registry's integrity value and a `SHA256SUMS` of every file. Nothing is loaded
+from a third party at run time. A defect in that code is Swagger UI's: report it
+here if it is exploitable through this service, and upstream in any case.
 
 It does write outward, to one place that is not a source: the generated data
 repository of its own environment, whose whole contents it produces. That
