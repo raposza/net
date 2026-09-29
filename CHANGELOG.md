@@ -4,6 +4,18 @@
 Releases before 0.2.0 carried no version and no tag; their history is the commit
 log.
 
+## 0.6.1
+
+- The web page shows the latest Splice release at the top: the highest version
+  the Splice tags endpoint carries, derived the same way as `splice-latest` in
+  the data repository's `versions.yml`. A release existing is not a network
+  running it, and the page says so.
+- The Scheduled section is removed from the web page. The events remain in
+  `/api/v1/events`.
+- Every source id in the Sources table links to the exact endpoint that was
+  polled, so a reader can check a published value against upstream by opening
+  it. The page itself still fetches nothing but the api.
+
 ## 0.6.0
 
 - The published source list carries the `url` of each source. It was id,

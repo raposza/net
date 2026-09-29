@@ -23,6 +23,13 @@
 </header>
 
 <section>
+  <h2>Latest Splice release</h2>
+  <p id="latest" class="latest mono">-</p>
+  <p class="lead">The highest version the Splice tags endpoint carries. A release
+  existing is not a network running it; what each network runs is below.</p>
+</section>
+
+<section>
   <h2>Networks</h2>
   <p class="lead">Scheduled, not running. Every value here is what the operators
   said they intend to do; a date that has arrived is not evidence that it
@@ -42,24 +49,6 @@
   </table>
 </section>
 
-<section>
-  <h2>Scheduled</h2>
-  <p class="lead">Upcoming only. Everything else, including what has passed and
-  what was withdrawn upstream, is in <a href="/api/v1/events">/api/v1/events</a>.</p>
-  <table id="events">
-    <thead>
-      <tr>
-        <th>Network</th>
-        <th>Kind</th>
-        <th>Version</th>
-        <th>Status</th>
-        <th>Effective</th>
-        <th>Title</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-</section>
 <section>
   <h2>Sources</h2>
   <table id="sources">

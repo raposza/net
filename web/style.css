@@ -104,6 +104,18 @@ h2 {
   text-shadow: 0 0 6px #000, 0 0 3px #000;
 }
 
+.latest {
+  margin: 0 0 .5rem;
+  font-size: 2.2rem;
+  font-weight: 600;
+  letter-spacing: -.01em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+td a {
+  color: var(--accent);
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
