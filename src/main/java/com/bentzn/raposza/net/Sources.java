@@ -270,7 +270,8 @@ public final class Sources {
                 text(mapDef, "claimPolicy", ""),
                 number(mapDef, "pollSeconds", 300),
                 flag(mapDef, "includePreReleases", false),
-                flag(mapDef, "enabled", false));
+                flag(mapDef, "enabled", false),
+                text(mapDef, "stableKey", null));
     }
 
 

@@ -10,7 +10,12 @@
     "An http endpoint is only usable as evidence if its body is stable when",
     "nothing has happened. Endpoints carrying counters - download counts, view",
     "counts - change on every poll and bank an observation that says nothing.",
-    "Splice is tracked by TAGS for that reason, not by the releases endpoint."
+    "Splice is tracked by TAGS for that reason, not by the releases endpoint.",
+    "stableKey names the one top-level member of a JSON body that decides whether",
+    "the body is new: a body whose bytes differ only outside that member is not",
+    "banked. It is for bodies that carry a moving value beside the state they",
+    "publish - the dso document carries the open mining round - and is set on",
+    "nothing else. What is banked is still the whole body as retrieved."
   ],
   "sources": [
     {
@@ -131,6 +136,20 @@
       "enabled": true
     },
     {
+      "id": "sync-global-dso-mainnet",
+      "publisher": "Global Synchronizer Foundation",
+      "transport": "http",
+      "url": "https://docs.global.canton.network.sync.global/dso",
+      "branch": null,
+      "pathPrefix": null,
+      "sourceAuthority": "OFFICIAL",
+      "claimPolicy": "sv-node-states",
+      "pollSeconds": 300,
+      "includePreReleases": false,
+      "enabled": true,
+      "stableKey": "sv_node_states"
+    },
+    {
       "id": "sync-global-info-testnet",
       "publisher": "Global Synchronizer Foundation",
       "transport": "http",
@@ -157,6 +176,20 @@
       "enabled": true
     },
     {
+      "id": "sync-global-dso-testnet",
+      "publisher": "Global Synchronizer Foundation",
+      "transport": "http",
+      "url": "https://docs.test.global.canton.network.sync.global/dso",
+      "branch": null,
+      "pathPrefix": null,
+      "sourceAuthority": "OFFICIAL",
+      "claimPolicy": "sv-node-states",
+      "pollSeconds": 300,
+      "includePreReleases": false,
+      "enabled": true,
+      "stableKey": "sv_node_states"
+    },
+    {
       "id": "sync-global-info-devnet",
       "publisher": "Global Synchronizer Foundation",
       "transport": "http",
@@ -181,6 +214,20 @@
       "pollSeconds": 300,
       "includePreReleases": false,
       "enabled": true
+    },
+    {
+      "id": "sync-global-dso-devnet",
+      "publisher": "Global Synchronizer Foundation",
+      "transport": "http",
+      "url": "https://docs.dev.global.canton.network.sync.global/dso",
+      "branch": null,
+      "pathPrefix": null,
+      "sourceAuthority": "OFFICIAL",
+      "claimPolicy": "sv-node-states",
+      "pollSeconds": 300,
+      "includePreReleases": false,
+      "enabled": true,
+      "stableKey": "sv_node_states"
     }
   ]
 }

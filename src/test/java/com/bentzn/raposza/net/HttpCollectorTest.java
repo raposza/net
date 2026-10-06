@@ -159,9 +159,99 @@ class HttpCollectorTest {
     }
 
 
+    @Test
+    void aStableKeyIgnoresMovementOutsideIt() {
+        SourceDef def = defStable("nodes");
+        Path dirEvidence = dirTmp.resolve("evidence");
+        refBody.set("{\"round\":1,\"nodes\":[{\"b\":2,\"a\":1}]}");
+        Poll resFirst = HttpCollector.collect(def, dirEvidence, null);
+        assertEquals("CHANGED", resFirst.outcome(), resFirst.detail());
+        Banked bankedFirst = resFirst.lstBanked().get(0);
+        HttpCollector.State stateFirst = new HttpCollector.State(null, null, bankedFirst.shaContent());
+
+        refBody.set("{\"nodes\":[{\"a\":1,\"b\":2}],\"round\":2}");
+        Poll resRound = HttpCollector.collect(def, dirEvidence, stateFirst);
+        assertEquals("UNCHANGED", resRound.outcome(), resRound.detail());
+        assertTrue(resRound.detail().contains("same nodes"), resRound.detail());
+        assertTrue(resRound.lstBanked().isEmpty());
+        assertEquals(bankedFirst.shaContent(), resRound.cursor(), "the cursor stays on the body banked");
+
+        refBody.set("{\"round\":3,\"nodes\":[{\"a\":1,\"b\":3}]}");
+        Poll resMoved = HttpCollector.collect(def, dirEvidence, stateFirst);
+        assertEquals("CHANGED", resMoved.outcome(), resMoved.detail());
+        assertTrue(Evidence.has(dirEvidence, resMoved.lstBanked().get(0).keyStorage()));
+    }
+
+
+    @Test
+    void withoutAStableKeyTheSameMovementIsBanked() {
+        SourceDef def = def();
+        Path dirEvidence = dirTmp.resolve("evidence");
+        refBody.set("{\"round\":1,\"nodes\":[1]}");
+        Poll resFirst = HttpCollector.collect(def, dirEvidence, null);
+        refBody.set("{\"round\":2,\"nodes\":[1]}");
+        Poll resNext = HttpCollector.collect(def, dirEvidence,
+                new HttpCollector.State(null, null, resFirst.lstBanked().get(0).shaContent()));
+        assertEquals("CHANGED", resNext.outcome(), resNext.detail());
+    }
+
+
+    @Test
+    void aBodyTheKeyCannotReadIsBankedRatherThanSkipped() {
+        SourceDef def = defStable("nodes");
+        Path dirEvidence = dirTmp.resolve("evidence");
+        refBody.set("{\"round\":1}");
+        Poll resFirst = HttpCollector.collect(def, dirEvidence, null);
+        refBody.set("{\"round\":2}");
+        Poll resNoKey = HttpCollector.collect(def, dirEvidence,
+                new HttpCollector.State(null, null, resFirst.lstBanked().get(0).shaContent()));
+        assertEquals("CHANGED", resNoKey.outcome(), "a body without the member is banked");
+
+        refBody.set("not json");
+        Poll resNotJson = HttpCollector.collect(def, dirEvidence,
+                new HttpCollector.State(null, null, resNoKey.lstBanked().get(0).shaContent()));
+        assertEquals("CHANGED", resNotJson.outcome(), "a body that is not JSON is banked");
+    }
+
+
+    @Test
+    void trailingContentIsBankedRatherThanCompared() {
+        SourceDef def = defStable("nodes");
+        Path dirEvidence = dirTmp.resolve("evidence");
+        refBody.set("{\"round\":1,\"nodes\":[1]}");
+        Poll resFirst = HttpCollector.collect(def, dirEvidence, null);
+        refBody.set("{\"round\":2,\"nodes\":[1]}{\"nodes\":[2]}");
+        Poll resTrail = HttpCollector.collect(def, dirEvidence,
+                new HttpCollector.State(null, null, resFirst.lstBanked().get(0).shaContent()));
+        assertEquals("CHANGED", resTrail.outcome(), "a second document after the first is not read past");
+    }
+
+
+    @Test
+    void onlyTheDsoSourcesDeclareAStableKey() throws IOException {
+        int cntDso = 0;
+        for (SourceDef defOne : Sources.load()) {
+            boolean isDso = defOne.id().startsWith("sync-global-dso-");
+            assertEquals(isDso ? "sv_node_states" : null, defOne.stableKey(), defOne.id());
+            if (isDso) {
+                assertTrue(defOne.url().endsWith("/dso"), defOne.url());
+                cntDso++;
+            }
+        }
+        assertEquals(3, cntDso);
+    }
+
+
     private SourceDef def() {
         return new SourceDef("test-http", "test", "http",
                 "http://127.0.0.1:" + srv.getAddress().getPort() + "/d.json",
                 null, null, "OFFICIAL", "none", 300, false, true);
+    }
+
+
+    private SourceDef defStable(String nameKey) {
+        return new SourceDef("test-stable", "test", "http",
+                "http://127.0.0.1:" + srv.getAddress().getPort() + "/d.json",
+                null, null, "OFFICIAL", "none", 300, false, true, nameKey);
     }
 }

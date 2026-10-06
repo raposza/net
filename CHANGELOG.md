@@ -4,6 +4,25 @@
 Releases before 0.2.0 carried no version and no tag; their history is the commit
 log.
 
+## 0.7.0
+
+- Three sources, `sync-global-dso-mainnet`, `-testnet` and `-devnet`: the `/dso`
+  document each network's docs host serves, which carries every Super
+  Validator's node state - the sequencer url per synchronizer serial among it.
+  Polled every 300 s and banked only when `sv_node_states` changes, because the
+  document also carries the open mining round, which moves on its own. Collected
+  only; nothing derived from them is published yet.
+- A source may name a `stableKey`: the one top-level JSON member that decides
+  whether a body is new. The whole body is still what is banked. The http
+  collector records itself as `HttpCollector@1.1`.
+- The build refuses any repository but Maven Central, any plugin without a pinned
+  version, and any version range or snapshot. The lifecycle plugins are pinned,
+  `maven-compiler-plugin` is 3.16.0 and `maven-shade-plugin` 3.6.2, and
+  `plexus-utils` 3.6.1 and 4.0.3 are forced into the plugins that loaded an
+  affected version (GHSA-6fmv-xxpf-w3cw).
+- Jackson 2.22.3, which fixes the advisories published against 2.22.0 for
+  `jackson-core` and `jackson-databind`.
+
 ## 0.6.3
 
 - `GET /api/v1/networks` carries `spliceLatest` beside the network list: the

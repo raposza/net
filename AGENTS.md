@@ -194,7 +194,12 @@ there is no second implementation of git to keep current.
 **http** collects one body per poll. Unchanged is established three ways,
 cheapest first: a conditional request answered 304, then a hash equal to the
 last one banked, then nothing. No body is interpreted — a JSON document, an HTML
-page and a calendar feed are bytes with a media type recorded beside them.
+page and a calendar feed are bytes with a media type recorded beside them — with
+one exception a source opts into. A source that names a `stableKey` is JSON that
+carries a moving value beside the state it publishes; a body whose bytes differ
+from the last one banked is banked only when that one top-level member differs,
+and a body the comparison cannot read is banked. What is banked is still the
+whole body as retrieved.
 
 An http endpoint is only usable as evidence if its body is STABLE when nothing
 has happened. Endpoints carrying counters — download counts, view counts — bank

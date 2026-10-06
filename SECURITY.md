@@ -1,7 +1,7 @@
 <!-- Author Claude/bentzn -->
 # Security
 
-Reviewed 2026-09-29 for v0.6.3.
+Reviewed 2026-10-06 for v0.7.0.
 
 ## Reporting a vulnerability
 
@@ -53,13 +53,22 @@ That shapes which defects matter most here:
   and its field count are required; every normalizer refuses a body it does not
   recognise whole rather than reading half of it. A body that can make
   this service fetch something, read a local file, or allocate without bound
-  belongs in the first class above and not in a footnote.
+  belongs in the first class above and not in a footnote. One parse runs
+  before a body is banked: a source that names a stable key is compared on
+  that one JSON member, by a parser that also refuses trailing content, and a
+  body it cannot read is banked rather than skipped.
 - **The credentials.** Two kinds, with different scopes. Each environment pushes
   its own generated data repository with its own key and can write no other. The
   release call carries a separate token rather than that key, because a push key
   cannot create a Release; it is scoped to one data repository and it can write
   its contents. Both are read from the environment and neither is in this
   repository.
+
+## The build
+
+Every build refuses, before it compiles anything, a repository other than
+Maven Central, a plugin without a pinned version, and a version range or a
+snapshot.
 
 ## Supported versions
 

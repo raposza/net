@@ -12,7 +12,7 @@
 
   <groupId>com.bentzn.raposza</groupId>
   <artifactId>raposza-network-feed</artifactId>
-  <version>0.6.3</version>
+  <version>0.7.0</version>
   <packaging>jar</packaging>
 
   <name>Raposza Network Operations Feed</name>
@@ -29,14 +29,24 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.release>21</maven.compiler.release>
-    <compiler.version>3.13.0</compiler.version>
+    <compiler.version>3.16.0</compiler.version>
     <javalin.version>7.2.3</javalin.version>
-    <jackson.version>2.22.0</jackson.version>
+    <jackson.version>2.22.3</jackson.version>
     <slf4j.version>2.0.17</slf4j.version>
-    <shade.version>3.6.0</shade.version>
+    <shade.version>3.6.2</shade.version>
     <h2.version>2.4.240</h2.version>
     <junit.version>5.11.3</junit.version>
     <surefire.version>3.5.2</surefire.version>
+    <enforcer.version>3.6.3</enforcer.version>
+    <clean.version>3.5.0</clean.version>
+    <resources.version>3.5.0</resources.version>
+    <jar.version>3.5.1</jar.version>
+    <install.version>3.2.0</install.version>
+    <deploy.version>3.2.0</deploy.version>
+    <site.version>3.22.0</site.version>
+    <!-- forced into plugins that load an affected plexus-utils, GHSA-6fmv-xxpf-w3cw -->
+    <plexus-utils3.version>3.6.1</plexus-utils3.version>
+    <plexus-utils4.version>4.0.3</plexus-utils4.version>
   </properties>
 
   <dependencies>
@@ -70,7 +80,87 @@
 
   <build>
     <finalName>raposza-network-feed</finalName>
+    <!--
+      Every plugin the lifecycle loads is pinned here, so the build does not
+      take whatever version the installed Maven defaults to.
+    -->
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-clean-plugin</artifactId>
+          <version>${clean.version}</version>
+          <dependencies>
+            <dependency>
+              <groupId>org.codehaus.plexus</groupId>
+              <artifactId>plexus-utils</artifactId>
+              <version>${plexus-utils4.version}</version>
+            </dependency>
+          </dependencies>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-resources-plugin</artifactId>
+          <version>${resources.version}</version>
+          <dependencies>
+            <dependency>
+              <groupId>org.codehaus.plexus</groupId>
+              <artifactId>plexus-utils</artifactId>
+              <version>${plexus-utils3.version}</version>
+            </dependency>
+          </dependencies>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>${jar.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-install-plugin</artifactId>
+          <version>${install.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-deploy-plugin</artifactId>
+          <version>${deploy.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-site-plugin</artifactId>
+          <version>${site.version}</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
     <plugins>
+      <!--
+        The supply-chain controls: no repository but Central, a version on
+        every plugin, no version ranges and no snapshots.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>${enforcer.version}</version>
+        <executions>
+          <execution>
+            <id>supply-chain</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <fail>true</fail>
+              <rules>
+                <requireNoRepositories/>
+                <requirePluginVersions/>
+                <banDynamicVersions>
+                  <allowSnapshots>false</allowSnapshots>
+                </banDynamicVersions>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
@@ -88,6 +178,13 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
         <version>${shade.version}</version>
+        <dependencies>
+          <dependency>
+            <groupId>org.codehaus.plexus</groupId>
+            <artifactId>plexus-utils</artifactId>
+            <version>${plexus-utils3.version}</version>
+          </dependency>
+        </dependencies>
         <executions>
           <execution>
             <phase>package</phase>

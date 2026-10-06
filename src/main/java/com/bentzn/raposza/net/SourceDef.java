@@ -12,6 +12,10 @@ package com.bentzn.raposza.net;
  * Authority is policy. A source is promoted by a change to this definition under
  * review, never by discovery.
  *
+ * stableKey is null for every source but those whose JSON body carries a moving
+ * value beside the state it publishes. It names the one top-level member that
+ * decides whether a body is new; the http collector says what it does with it.
+ *
  * Author Claude/bentzn
  */
 public record SourceDef(
@@ -25,7 +29,31 @@ public record SourceDef(
         String claimPolicy,
         int pollSeconds,
         boolean includePreReleases,
-        boolean enabled) {
+        boolean enabled,
+        String stableKey) {
+
+    /**
+     * A definition without a stable key.
+     *
+     * @param id stable identity
+     * @param publisher who publishes it
+     * @param transport git or http
+     * @param url where it is fetched from
+     * @param branch ref to follow, or null for the remote default
+     * @param pathPrefix subtree tracked, or null for the whole tree
+     * @param sourceAuthority the authority it carries
+     * @param claimPolicy which claim types it governs
+     * @param pollSeconds how often it is retrieved
+     * @param includePreReleases whether pre-release tags reach consumers
+     * @param enabled whether it is collected at all
+     */
+    public SourceDef(String id, String publisher, String transport, String url, String branch, String pathPrefix,
+            String sourceAuthority, String claimPolicy, int pollSeconds, boolean includePreReleases,
+            boolean enabled) {
+        this(id, publisher, transport, url, branch, pathPrefix, sourceAuthority, claimPolicy, pollSeconds,
+                includePreReleases, enabled, null);
+    }
+
 
     /** @return true when this source is collected by walking commits */
     public boolean isGit() {

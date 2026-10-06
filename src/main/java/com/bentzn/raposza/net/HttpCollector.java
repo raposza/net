@@ -4,6 +4,7 @@
  */
 package com.bentzn.raposza.net;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -11,8 +12,15 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * The http transport: one GET, one body, at most one observation.
@@ -22,21 +30,34 @@ import java.util.Optional;
  * crosses the network at all. Otherwise the body is hashed and compared with the
  * last one banked. Only bytes that differ become an observation.
  *
- * Nothing here interprets the body. A JSON document, an HTML page and a calendar
- * feed are the same thing to this collector: bytes, with a media type recorded
- * beside them. Interpretation is a normalizer's job, later, against evidence
- * that is already banked.
+ * Nothing here interprets the body, with one exception a source opts into. A
+ * JSON document, an HTML page and a calendar feed are the same thing to this
+ * collector: bytes, with a media type recorded beside them. Interpretation is a
+ * normalizer's job, later, against evidence that is already banked.
+ *
+ * The exception is a source that names a stable key. Its body is JSON that
+ * carries a moving value beside the state it publishes, so a body whose bytes
+ * differ from the last one banked is compared again on that one top-level
+ * member, with object keys sorted, and banked only when the member differs.
+ * What is banked is still the body exactly as retrieved: the key decides
+ * whether to bank, never what. A body the comparison cannot read - not JSON,
+ * content after the document, no
+ * such member, the previous body missing from the store - is banked, so the key
+ * can cost an extra observation but never a lost one.
  *
  * Author Claude/bentzn
  */
 public final class HttpCollector {
 
     /** Recorded on every observation; change it when the retrieval behaviour changes. */
-    public static final String VER_COLLECTOR = "HttpCollector@1.0";
+    public static final String VER_COLLECTOR = "HttpCollector@1.1";
 
     private static final String AGENT = "raposza-network-feed";
 
     private static final Duration DUR_TIMEOUT = Duration.ofSeconds(60);
+
+    private static final ObjectMapper MAPPER =
+            new ObjectMapper().enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
 
     private static final HttpClient CLIENT = HttpClient.newBuilder()
             .followRedirects(HttpClient.Redirect.NORMAL)
@@ -85,6 +106,9 @@ public final class HttpCollector {
             if (state != null && shaContent.equals(state.shaContent()))
                 return Poll.of("UNCHANGED", "same body, " + bytesBody.length + " bytes",
                         millis(msStart), shaContent);
+            if (sameStableKey(def, dirEvidence, state, bytesBody))
+                return Poll.of("UNCHANGED", "same " + def.stableKey() + ", " + bytesBody.length + " bytes",
+                        millis(msStart), state.shaContent());
 
             Evidence.put(dirEvidence, bytesBody);
             Banked banked = new Banked(keyStorage, shaContent,
@@ -100,6 +124,67 @@ public final class HttpCollector {
             Thread.currentThread().interrupt();
             return Poll.of("TRANSPORT_ERROR", "interrupted", millis(msStart), null);
         }
+    }
+
+
+    /**
+     * @param def the source definition
+     * @param dirEvidence root of the evidence store
+     * @param state what the previous observation carried
+     * @param bytesBody a body whose bytes differ from the last one banked
+     * @return true only when the source names a stable key and that member reads
+     *         the same in both bodies; false whenever either side cannot be read
+     */
+    private static boolean sameStableKey(SourceDef def, Path dirEvidence, State state, byte[] bytesBody) {
+        if (def.stableKey() == null || def.stableKey().isBlank() || state == null || state.shaContent() == null)
+            return false;
+        String keyLast = "sha256/" + state.shaContent();
+        if (!Evidence.has(dirEvidence, keyLast))
+            return false;
+        try {
+            String canonNew = canonical(bytesBody, def.stableKey());
+            String canonLast = canonical(Evidence.get(dirEvidence, keyLast), def.stableKey());
+            return canonNew != null && canonNew.equals(canonLast);
+        }
+        catch (IOException e) {
+            return false;
+        }
+    }
+
+
+    /**
+     * @param bytesBody a JSON body whose root is an object
+     * @param nameKey the top-level member to read
+     * @return the member serialized with every object's keys sorted, or null when
+     *         the body has no such member
+     * @throws IOException when the body is not a JSON object
+     */
+    private static String canonical(byte[] bytesBody, String nameKey) throws IOException {
+        Map<String, Object> mapRoot = MAPPER.readValue(new ByteArrayInputStream(bytesBody),
+                new TypeReference<Map<String, Object>>() {
+                });
+        if (mapRoot == null || !mapRoot.containsKey(nameKey))
+            return null;
+        return MAPPER.writeValueAsString(sorted(mapRoot.get(nameKey)));
+    }
+
+
+    private static Object sorted(Object objIn) {
+        if (objIn instanceof Map) {
+            Map<String, Object> mapOut = new TreeMap<>();
+            for (Map.Entry<?, ?> entry : ((Map<?, ?>) objIn).entrySet()) {
+                mapOut.put(String.valueOf(entry.getKey()), sorted(entry.getValue()));
+            }
+            return mapOut;
+        }
+        if (objIn instanceof List) {
+            List<Object> lstOut = new ArrayList<>();
+            for (Object objOne : (List<?>) objIn) {
+                lstOut.add(sorted(objOne));
+            }
+            return lstOut;
+        }
+        return objIn;
     }
 
 
