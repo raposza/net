@@ -63,7 +63,7 @@ public final class Events {
     public static final List<String> LST_FIELD = List.of("kind", "network", "status", "effective.from",
             "effective.to", "version", "version.precision", "version.change", "title", "description",
             "upstream.type", "commit_sha", "commit_time", "sv_version", "migration_id", "serial_id", "chain_id_suffix",
-            "successor_version", "legacy_version", "scan_url", "withdrawn");
+            "successor_version", "legacy_version", "scan_url", "sequencers", "withdrawn");
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -285,7 +285,7 @@ public final class Events {
         String sqlRead = "select id, source_id, subject_ref, kind, network, status, effective_from,"
                 + " effective_to, version, version_precision, version_change, title, description,"
                 + " upstream_type, commit_sha, commit_time, sv_version, migration_id, serial_id, chain_id_suffix,"
-                + " successor_version, legacy_version, scan_url, withdrawn, revision,"
+                + " successor_version, legacy_version, scan_url, sequencers, withdrawn, revision,"
                 + " first_observed_at, last_banked_at,"
                 + " last_observation_id from event";
         Map<String, List<Event>> mapSource = new TreeMap<>();
@@ -312,10 +312,11 @@ public final class Events {
                 mapField.put("successor_version", rs.getString(21));
                 mapField.put("legacy_version", rs.getString(22));
                 mapField.put("scan_url", rs.getString(23));
-                mapField.put("withdrawn", rs.getBoolean(24) ? "true" : "false");
-                Event evt = new Event(rs.getString(1), rs.getString(3), mapField, rs.getInt(25),
-                        rs.getObject(26, OffsetDateTime.class).toInstant(),
-                        rs.getObject(27, OffsetDateTime.class).toInstant(), rs.getString(28));
+                mapField.put("sequencers", rs.getString(24));
+                mapField.put("withdrawn", rs.getBoolean(25) ? "true" : "false");
+                Event evt = new Event(rs.getString(1), rs.getString(3), mapField, rs.getInt(26),
+                        rs.getObject(27, OffsetDateTime.class).toInstant(),
+                        rs.getObject(28, OffsetDateTime.class).toInstant(), rs.getString(29));
                 mapSource.computeIfAbsent(rs.getString(2), idNew -> new ArrayList<>()).add(evt);
             }
         }
@@ -385,6 +386,7 @@ public final class Events {
                             "successorVersion", mapField.get("successor_version"),
                             "legacyVersion", mapField.get("legacy_version")),
                     "scan_url", mapField.get("scan_url"),
+                    "sequencers", sequencers(mapField.get("sequencers")),
                     "revision", Integer.valueOf(evt.revision()),
                     "firstObservedAt", Dataset.iso(evt.firstObservedAt()),
                     "lastBankedAt", Dataset.iso(evt.lastBankedAt()),
@@ -394,6 +396,29 @@ public final class Events {
                             "normalizer", idNormalizer))));
         }
         return lstOut;
+    }
+
+
+    /**
+     * The sequencers of a Super Validator node as they are published: one record
+     * per physical synchronizer serial, in the order the normalizer claimed them,
+     * which is highest serial first.
+     *
+     * @param textSequencers the field as claimed, `serial=url` entries separated
+     *        by one space, or null
+     * @return one map per entry, or null when the field carries none
+     */
+    static List<Object> sequencers(String textSequencers) {
+        if (textSequencers == null || textSequencers.isBlank())
+            return null;
+        List<Object> lstOut = new ArrayList<>();
+        for (String textEntry : textSequencers.trim().split(" +")) {
+            int posEq = textEntry.indexOf('=');
+            if (posEq <= 0)
+                continue;
+            lstOut.add(Dataset.map("serial", textEntry.substring(0, posEq), "url", textEntry.substring(posEq + 1)));
+        }
+        return lstOut.isEmpty() ? null : lstOut;
     }
 
 
@@ -681,9 +706,9 @@ public final class Events {
         String sqlIns = "insert into event (id, source_id, subject_ref, kind, network, status, effective_from,"
                 + " effective_to, version, version_precision, version_change, title, description, upstream_type,"
                 + " commit_sha, commit_time, sv_version, migration_id, serial_id, chain_id_suffix,"
-                + " successor_version, legacy_version, scan_url, withdrawn, revision, first_observed_at,"
-                + " last_banked_at, last_observation_id)"
-                + " values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+                + " successor_version, legacy_version, scan_url, sequencers, withdrawn, revision,"
+                + " first_observed_at, last_banked_at, last_observation_id)"
+                + " values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
         try (PreparedStatement stmt = conn.prepareStatement(sqlIns)) {
             for (Event evt : lstEvent) {
                 Map<String, String> mapField = evt.mapField();
@@ -710,11 +735,12 @@ public final class Events {
                 stmt.setString(21, mapField.get("successor_version"));
                 stmt.setString(22, mapField.get("legacy_version"));
                 stmt.setString(23, mapField.get("scan_url"));
-                stmt.setBoolean(24, "true".equals(mapField.get("withdrawn")));
-                stmt.setInt(25, evt.revision());
-                stmt.setObject(26, OffsetDateTime.ofInstant(evt.firstObservedAt(), ZoneOffset.UTC));
-                stmt.setObject(27, OffsetDateTime.ofInstant(evt.lastBankedAt(), ZoneOffset.UTC));
-                stmt.setString(28, evt.lastObservationId());
+                stmt.setString(24, mapField.get("sequencers"));
+                stmt.setBoolean(25, "true".equals(mapField.get("withdrawn")));
+                stmt.setInt(26, evt.revision());
+                stmt.setObject(27, OffsetDateTime.ofInstant(evt.firstObservedAt(), ZoneOffset.UTC));
+                stmt.setObject(28, OffsetDateTime.ofInstant(evt.lastBankedAt(), ZoneOffset.UTC));
+                stmt.setString(29, evt.lastObservationId());
                 stmt.addBatch();
             }
             if (!lstEvent.isEmpty()) {

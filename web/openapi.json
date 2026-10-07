@@ -540,7 +540,7 @@
           },
           "superValidators": {
             "type": "array",
-            "description": "Every Super Validator node with the version it reports, ordered by name. Empty where none is reported.",
+            "description": "Every Super Validator node with the version it reports and the hosts it publishes, ordered by name. Empty where none is reported.",
             "items": {
               "type": "object",
               "properties": {
@@ -562,6 +562,27 @@
                     "null"
                   ],
                   "description": "Scan url the node publishes"
+                },
+                "sequencers": {
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "description": "Sequencer url per physical synchronizer serial, highest serial first. A node lists two while an upgrade is in flight. Null where no source this environment reads reports them.",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "serial": {
+                        "type": "string",
+                        "examples": [
+                          "5"
+                        ]
+                      },
+                      "url": {
+                        "type": "string"
+                      }
+                    }
+                  }
                 },
                 "eventId": {
                   "type": [
@@ -768,6 +789,24 @@
               "string",
               "null"
             ]
+          },
+          "sequencers": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "description": "Sequencer url per physical synchronizer serial, on a Super Validator node event. Null on every other kind.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "serial": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                }
+              }
+            }
           },
           "revision": {
             "type": "integer"

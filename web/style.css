@@ -176,6 +176,38 @@ code {
   color: var(--accent);
 }
 
+h3 {
+  margin: 1.75rem 0 .4rem;
+  font-size: .95rem;
+}
+
+h3 .cnt {
+  margin-left: .5rem;
+  color: var(--muted);
+  font-weight: 400;
+  font-size: .85rem;
+}
+
+td.hosts {
+  font-size: .82rem;
+  line-height: 1.7;
+  white-space: nowrap;
+}
+
+td.hosts .role {
+  display: inline-block;
+  width: 6.6rem;
+  color: var(--muted);
+  font-family: ui-sans-serif, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+td.hosts .other {
+  color: var(--muted);
+}
+
 footer {
   margin-top: 3rem;
   padding-top: 1rem;

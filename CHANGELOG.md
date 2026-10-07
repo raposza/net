@@ -4,6 +4,24 @@
 Releases before 0.2.0 carried no version and no tag; their history is the commit
 log.
 
+## 0.7.1
+
+- The web page carries a Super Validators section, one table per network: each
+  node's version, its scan host, and its sequencer host per physical
+  synchronizer serial, highest serial first. A serial other than the one the
+  network reports as current is marked. The sequencer is the host a participant
+  connects to and the one that changes at every serial.
+- `GET /api/v1/networks` carries `sequencers` on every Super Validator node,
+  beside `scan` and `version`: one `serial` and `url` per physical synchronizer
+  serial, highest first, read from the network's DSO document. Events carry the
+  same field. Additive; null where an environment has not collected that
+  document.
+- The three DSO documents are read, one normalizer per network, which checks
+  the document's own `isDevNet` flag against the network it reads and refuses a
+  body it does not recognise whole.
+- The index gains a column, so the first start of this build drops the index and
+  rebuilds it from the evidence store.
+
 ## 0.7.0
 
 - Three sources, `sync-global-dso-mainnet`, `-testnet` and `-devnet`: the `/dso`

@@ -37,7 +37,10 @@ public final class Normalize {
             new NetworkInfoNormalizer("sync-global-info-devnet", "DEVNET", "devnet"),
             new SvVersionsNormalizer("sync-global-sv-versions-mainnet", "MAINNET"),
             new SvVersionsNormalizer("sync-global-sv-versions-testnet", "TESTNET"),
-            new SvVersionsNormalizer("sync-global-sv-versions-devnet", "DEVNET"));
+            new SvVersionsNormalizer("sync-global-sv-versions-devnet", "DEVNET"),
+            new DsoNormalizer("sync-global-dso-mainnet", "MAINNET"),
+            new DsoNormalizer("sync-global-dso-testnet", "TESTNET"),
+            new DsoNormalizer("sync-global-dso-devnet", "DEVNET"));
 
     private static final int LEN_DETAIL = 500;
 

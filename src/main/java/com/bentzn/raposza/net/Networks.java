@@ -146,7 +146,10 @@ public final class Networks {
 
 
     /**
-     * Every Super Validator node of one network with the version it reports.
+     * Every Super Validator node of one network with the version it reports and
+     * the hosts it publishes: its scan url, and its sequencer url per physical
+     * synchronizer serial, highest serial first. The sequencer is what changes at
+     * every serial, so a node carries two while an upgrade is in flight.
      *
      * An organization is connected to a node, not to a network, and the two
      * are not the same fact: a roster carrying more than one version is normal
@@ -173,6 +176,7 @@ public final class Networks {
                     "name", ref(mapEvent),
                     "version", version(mapEvent, "value"),
                     "scan", text(mapEvent, "scan_url"),
+                    "sequencers", mapEvent.get("sequencers"),
                     "eventId", id(mapEvent)));
         }
         return lstOut;

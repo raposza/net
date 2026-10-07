@@ -90,6 +90,97 @@ function renderNetworks(data) {
   });
 }
 
+/* The host part of a url, or the text itself when it does not parse. */
+function host(url) {
+  try {
+    return new URL(url).hostname;
+  }
+  catch (err) {
+    return String(url);
+  }
+}
+
+function hostLine(label, url, other) {
+  const div = document.createElement("div");
+  const role = document.createElement("span");
+  role.className = "role";
+  role.textContent = label;
+  div.appendChild(role);
+  const name = document.createElement("span");
+  name.textContent = host(url);
+  if (other) {
+    name.className = "other";
+  }
+  div.appendChild(name);
+  if (other) {
+    const tag = document.createElement("span");
+    tag.className = "tag";
+    tag.textContent = "other serial";
+    div.appendChild(document.createTextNode(" "));
+    div.appendChild(tag);
+  }
+  return div;
+}
+
+/* One table per network, in the order the api lists them. A sequencer whose
+ * serial is not the one the network reports as current is marked; where the
+ * network reports no serial, none is marked. */
+function renderSvs(data) {
+  const box = document.getElementById("svs");
+  box.replaceChildren();
+  data.networks.forEach(function (n) {
+    const nodes = n.superValidators || [];
+    const current = n.deployment ? n.deployment.serialId : null;
+    const h3 = document.createElement("h3");
+    h3.textContent = n.network;
+    const cnt = document.createElement("span");
+    cnt.className = "cnt";
+    cnt.textContent = nodes.length + " nodes" +
+      (current === null || current === undefined ? "" : ", serial " + current);
+    h3.appendChild(cnt);
+    box.appendChild(h3);
+    if (nodes.length === 0) {
+      const p = document.createElement("p");
+      p.className = "lead";
+      p.textContent = "No node reported.";
+      box.appendChild(p);
+      return;
+    }
+    const table = document.createElement("table");
+    const head = document.createElement("thead");
+    const hr = document.createElement("tr");
+    ["Super Validator", "Version", "Hosts"].forEach(function (t) {
+      const th = document.createElement("th");
+      th.textContent = t;
+      hr.appendChild(th);
+    });
+    head.appendChild(hr);
+    table.appendChild(head);
+    const body = document.createElement("tbody");
+    nodes.forEach(function (sv) {
+      const tr = document.createElement("tr");
+      tr.appendChild(cell(sv.name));
+      tr.appendChild(cell(sv.version, "mono"));
+      const td = document.createElement("td");
+      td.className = "mono hosts";
+      if (sv.scan) {
+        td.appendChild(hostLine("scan", sv.scan, false));
+      }
+      (sv.sequencers || []).forEach(function (q) {
+        const other = current !== null && current !== undefined && String(q.serial) !== String(current);
+        td.appendChild(hostLine("sequencer " + q.serial, q.url, other));
+      });
+      if (!td.firstChild) {
+        td.textContent = "-";
+      }
+      tr.appendChild(td);
+      body.appendChild(tr);
+    });
+    table.appendChild(body);
+    box.appendChild(table);
+  });
+}
+
 /* The highest Splice release that exists, as the api derives it. A release
  * existing is not a network running it. */
 function renderLatest(data) {
@@ -162,6 +253,7 @@ async function load() {
     renderStatus(status);
     renderNetworks(networks);
     renderLatest(networks);
+    renderSvs(networks);
     renderSources(sources);
   }
   catch (err) {
