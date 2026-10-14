@@ -1,7 +1,7 @@
 <!-- Author Claude/bentzn -->
 # Security
 
-Reviewed 2026-10-07 for v0.7.1.
+Reviewed 2026-10-14 for v0.8.0.
 
 ## Reporting a vulnerability
 
@@ -34,9 +34,11 @@ from a third party at run time. A defect in that code is Swagger UI's: report it
 here if it is exploitable through this service, and upstream in any case.
 
 It does write outward, to one place that is not a source: the generated data
-repository of its own environment, whose whole contents it produces. That
-repository keeps an accumulated record of every state it has published, which is
-the same derived facts over time and carries nothing a source did not state.
+repository of its own environment, whose whole contents it produces. Its commit
+log keeps every state it has published, which is the same derived facts over
+time and carries nothing a source did not state. Text a source supplied is
+escaped where it is written into that repository's README, so it cannot inject
+markup, images or HTML there.
 
 That shapes which defects matter most here:
 

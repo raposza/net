@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.UnaryOperator;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -33,18 +34,21 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *
  * The repository holds three files and nothing else. `versions.yml` is the
  * current state, the few values a consumer acts on, in a form a person reads
- * without tooling. `history.yml` is every state it has held, newest first, which
- * is the record a reader cannot rebuild from anywhere else. The README carries
- * the consumer contract, because under a repository of this size there is
- * nowhere else for it to live.
+ * without tooling. `README.md` is the same data as tables, because it is the
+ * page GitHub shows first and a person arriving at the repository should see
+ * the data before anything about it. `REAL_README.md`, linked from the top of
+ * the README, carries the consumer contract, because under a repository of this
+ * size there is nowhere else for it to live.
  *
- * A commit is made only when the values MOVED. The timestamp moves on every
- * publication by design, so the comparison is made over `versions.yml` with that
- * one line dropped; the file that is committed carries it.
+ * A commit is made only when something MOVED. The timestamp moves on every
+ * publication by design, so `versions.yml` is compared with that one line
+ * dropped and the README with its one stamp line dropped; the files that are
+ * committed carry them. The README is compared as well as `versions.yml`
+ * because it shows the sequencer hosts, which `versions.yml` does not carry.
  *
  * The data branch is ordinary git. Every change is a commit on top of the last
- * one, nothing is amended and nothing is force-pushed, so the commit log and the
- * file agree about what the feed has said.
+ * one, nothing is amended and nothing is force-pushed. No history file is
+ * kept; the commit log is the record.
  *
  * Liveness is a second branch. A repository that is correctly silent looks
  * exactly like a repository whose writer has stopped, so the heartbeat commits a
@@ -67,11 +71,18 @@ public final class GitPublish {
     /** The current state, the values a consumer acts on. */
     public static final String NAME_VERSIONS = "versions.yml";
 
-    /** Every state that file has held, newest first. */
-    public static final String NAME_HISTORY = "history.yml";
-
-    /** The consumer contract. */
+    /** The data as tables, the page a visitor to the repository sees first. */
     public static final String NAME_README = "README.md";
+
+    /** The consumer contract, linked from the top of the README. */
+    public static final String NAME_CONTRACT = "REAL_README.md";
+
+    /**
+     * Opens the one line of the README that moves on every publication. That
+     * line alone is dropped when the README is compared, exactly as the
+     * timestamp line is dropped from `versions.yml`.
+     */
+    static final String LINE_STAMP = "Values as of ";
 
     /** The liveness file, on the heartbeat branch only. */
     public static final String NAME_BEAT = "heartbeat.json";
@@ -202,9 +213,12 @@ public final class GitPublish {
 
 
     /**
-     * The data branch. Both files are built in memory before either is written,
-     * so a history file that cannot be read leaves the whole branch untouched
-     * rather than a current state with no record behind it.
+     * The data branch. All three files are built in memory before any is
+     * written.
+     *
+     * A file of an earlier shape left on the branch counts as a change, so the
+     * first turn of a build that stops writing a file removes it even when no
+     * value moved.
      *
      * @param mapDs the corpus that was just published
      */
@@ -214,13 +228,19 @@ public final class GitPublish {
         Path dirTree = spec.dirWork().resolve("data");
         ensure(dirTree, spec.nameBranchData());
         String textVersions = Versions.yaml(mapDs);
+        String textReadme = readme(mapDs);
+        String textContract = contract(mapDs);
         Path fileVersions = dirTree.resolve(NAME_VERSIONS);
-        if (!History.same(fileVersions, textVersions)) {
-            String textHistory = History.prepend(dirTree.resolve(NAME_HISTORY), textVersions);
-            String textReadme = readme(mapDs);
+        Path fileReadme = dirTree.resolve(NAME_README);
+        Path fileContract = dirTree.resolve(NAME_CONTRACT);
+        boolean bMoved = !same(fileVersions, textVersions, Versions::withoutTimestamp)
+                || !same(fileReadme, textReadme, GitPublish::withoutStamp)
+                || !same(fileContract, textContract, UnaryOperator.identity())
+                || !strays(dirTree).isEmpty();
+        if (bMoved) {
             Files.write(fileVersions, textVersions.getBytes(StandardCharsets.UTF_8));
-            Files.write(dirTree.resolve(NAME_HISTORY), textHistory.getBytes(StandardCharsets.UTF_8));
-            Files.write(dirTree.resolve(NAME_README), textReadme.getBytes(StandardCharsets.UTF_8));
+            Files.write(fileReadme, textReadme.getBytes(StandardCharsets.UTF_8));
+            Files.write(fileContract, textContract.getBytes(StandardCharsets.UTF_8));
             prune(dirTree);
             must(dirTree, "git", "add", "-A");
             if (exec(dirTree, "git", "diff", "--cached", "--quiet").code() != 0) {
@@ -253,17 +273,64 @@ public final class GitPublish {
      * @param dirTree the working clone of the data branch
      */
     private static void prune(Path dirTree) throws IOException {
-        List<String> lstKeep = List.of(NAME_VERSIONS, NAME_HISTORY, NAME_README);
+        for (Path fileOne : strays(dirTree)) {
+            Files.delete(fileOne);
+            System.out.println("git publication: removed " + fileOne.getFileName()
+                    + ", which this publication does not write");
+        }
+    }
+
+
+    /**
+     * @param dirTree the working clone of the data branch
+     * @return the regular files at its top that this class does not write,
+     *         names beginning with a dot excepted
+     */
+    private static List<Path> strays(Path dirTree) throws IOException {
+        List<String> lstKeep = List.of(NAME_VERSIONS, NAME_README, NAME_CONTRACT);
+        List<Path> lstStray = new ArrayList<>();
         try (DirectoryStream<Path> strmFile = Files.newDirectoryStream(dirTree)) {
             for (Path fileOne : strmFile) {
                 String nameOne = fileOne.getFileName().toString();
                 if (nameOne.startsWith(".") || !Files.isRegularFile(fileOne) || lstKeep.contains(nameOne))
                     continue;
-                Files.delete(fileOne);
-                System.out.println("git publication: removed " + nameOne
-                        + ", which this publication does not write");
+                lstStray.add(fileOne);
             }
         }
+        return lstStray;
+    }
+
+
+    /**
+     * @param fileOld the file on the branch, which need not exist
+     * @param textNew the text that would be written
+     * @param fnStable drops what moves on every publication by design
+     * @return true when the file on disk states the same thing
+     */
+    private static boolean same(Path fileOld, String textNew, UnaryOperator<String> fnStable) {
+        if (!Files.isRegularFile(fileOld))
+            return false;
+        try {
+            return fnStable.apply(Files.readString(fileOld, StandardCharsets.UTF_8)).equals(fnStable.apply(textNew));
+        }
+        catch (IOException e) {
+            return false;
+        }
+    }
+
+
+    /**
+     * @param textReadme the text of a README this class wrote
+     * @return it without its stamp line
+     */
+    static String withoutStamp(String textReadme) {
+        StringBuilder sbOut = new StringBuilder(textReadme.length());
+        for (String lineOne : textReadme.split("\n")) {
+            if (lineOne.startsWith(LINE_STAMP))
+                continue;
+            sbOut.append(lineOne).append('\n');
+        }
+        return sbOut.toString();
     }
 
 
@@ -381,6 +448,244 @@ public final class GitPublish {
 
 
     /**
+     * The README: the data first, the way the web page shows it, so a person
+     * arriving at the repository sees what the networks run before anything
+     * about how it is published. The link to the contract is the one thing above
+     * it.
+     *
+     * Everything here is drawn from the publication, never typed. The one line
+     * that moves on every publication opens with LINE_STAMP and is dropped when
+     * the README is compared, so this file commits when what it shows changes
+     * and at no other time.
+     *
+     * @param mapDs the corpus being committed
+     * @return the text of `README.md`
+     */
+    String readme(Map<String, Object> mapDs) {
+        StringBuilder sbOut = new StringBuilder(16384);
+        sbOut.append("# Raposza Network Operations Feed\n\n");
+        sbOut.append("**Read [").append(NAME_CONTRACT).append("](").append(NAME_CONTRACT)
+                .append(") before you build on this data** - what every field\n");
+        sbOut.append("means, where it comes from, and what is guaranteed.\n\n");
+        if (!"prd".equals(spec.nameEnvironment())) {
+            sbOut.append("> **Not the production feed.** Environment: ").append(md(spec.nameEnvironment()))
+                    .append(". It exists so the\n");
+            sbOut.append("> publication path is rehearsed, and its contents are not a statement about\n");
+            sbOut.append("> any network.\n\n");
+        }
+        sbOut.append("What is deployed on the Canton Network, what is scheduled, and which Super\n");
+        sbOut.append("Validator node runs what. Machine-generated from public sources; nothing here\n");
+        sbOut.append("is edited by hand. The same values are in [`").append(NAME_VERSIONS).append("`](")
+                .append(NAME_VERSIONS).append(") for machines.\n");
+        sbOut.append("\n## Latest Splice release\n\n");
+        String verLatest = Versions.latest(mapDs);
+        sbOut.append(verLatest == null ? "-" : "**" + md(verLatest) + "**").append("\n\n");
+        sbOut.append("The highest version the Splice tags endpoint carries. A release existing is\n");
+        sbOut.append("not a network running it; what each network runs is below.\n");
+        networksTable(sbOut, mapDs);
+        superValidators(sbOut, mapDs);
+        sourcesTable(sbOut, mapDs);
+        sbOut.append("\n---\n\n");
+        sbOut.append(LINE_STAMP).append(md(Dataset.meta(mapDs).get("createdAt"))).append(".\n");
+        sbOut.append("A commit is made only when something shown here changes, so this is when a\n");
+        sbOut.append("value last moved, not when the feed last checked. The `").append(spec.nameBranchBeat())
+                .append("` branch says\n");
+        sbOut.append("the writer is alive.\n");
+        return sbOut.toString();
+    }
+
+
+    private static void networksTable(StringBuilder sbOut, Map<String, Object> mapDs) {
+        sbOut.append("\n## Networks\n\n");
+        sbOut.append("Running and SV app are what the network itself reports. Scheduled and Since\n");
+        sbOut.append("are the last confirmed upgrade on the operations schedule whose date has\n");
+        sbOut.append("arrived; Next and Due are the earliest upgrade still ahead, tentative ones\n");
+        sbOut.append("included; Minimum is the minimum version in force.\n\n");
+        sbOut.append("| Network | Running | SV app | Scheduled | Since | Minimum | Next | Due |\n");
+        sbOut.append("| --- | --- | --- | --- | --- | --- | --- | --- |\n");
+        for (Map<String, Object> mapNetwork : networks(mapDs)) {
+            Map<String, Object> mapSplice = sub(mapNetwork, "splice");
+            Map<String, Object> mapNext = sub(mapNetwork, "next");
+            Map<String, Object> mapDeploy = sub(mapNetwork, "deployment");
+            sbOut.append("| ").append(md(nameNetwork(mapNetwork)))
+                    .append(" | ").append(md(val(mapDeploy, "version")))
+                    .append(" | ").append(md(val(mapDeploy, "svVersion")))
+                    .append(" | ").append(md(val(mapSplice, "scheduledVersion")))
+                    .append(" | ").append(md(val(mapSplice, "scheduledFrom")))
+                    .append(" | ").append(md(val(mapSplice, "minimumVersion")))
+                    .append(" | ").append(md(val(mapNext, "version")))
+                    .append(" | ").append(md(val(mapNext, "from")))
+                    .append(" |\n");
+        }
+    }
+
+
+    /**
+     * One table per network, as the web page has it. A sequencer whose serial is
+     * not the one the network reports as current is marked; where the network
+     * reports no serial, none is marked.
+     */
+    private static void superValidators(StringBuilder sbOut, Map<String, Object> mapDs) {
+        sbOut.append("\n## Super Validators\n\n");
+        sbOut.append("The hosts each Super Validator node publishes, as the network's own DSO\n");
+        sbOut.append("document states them. Scan is the node's public read endpoint. A participant\n");
+        sbOut.append("connects to a sequencer, and the sequencer changes at every synchronizer\n");
+        sbOut.append("serial: while an upgrade is in flight a node lists one per serial, highest\n");
+        sbOut.append("first, and any serial other than the one the network reports as current is\n");
+        sbOut.append("marked.\n");
+        for (Map<String, Object> mapNetwork : networks(mapDs)) {
+            String serialCurrent = val(sub(mapNetwork, "deployment"), "serialId");
+            List<Map<String, Object>> lstNode = maps(mapNetwork.get("superValidators"));
+            sbOut.append("\n### ").append(md(nameNetwork(mapNetwork))).append("\n\n");
+            sbOut.append(lstNode.size()).append(lstNode.size() == 1 ? " node" : " nodes");
+            if (serialCurrent != null) {
+                sbOut.append(", serial ").append(md(serialCurrent));
+            }
+            sbOut.append(".\n\n");
+            if (lstNode.isEmpty()) {
+                sbOut.append("No node reported.\n");
+                continue;
+            }
+            sbOut.append("| Super Validator | Version | Scan | Sequencers |\n");
+            sbOut.append("| --- | --- | --- | --- |\n");
+            for (Map<String, Object> mapNode : lstNode) {
+                List<String> lstSeq = new ArrayList<>();
+                for (Map<String, Object> mapSeq : maps(mapNode.get("sequencers"))) {
+                    String serialOne = val(mapSeq, "serial");
+                    String textOne = md(serialOne) + ": " + md(host(val(mapSeq, "url")));
+                    if (serialCurrent != null && !serialCurrent.equals(serialOne)) {
+                        textOne += " *(other serial)*";
+                    }
+                    lstSeq.add(textOne);
+                }
+                sbOut.append("| ").append(md(val(mapNode, "name")))
+                        .append(" | ").append(md(val(mapNode, "version")))
+                        .append(" | ").append(md(host(val(mapNode, "scan"))))
+                        .append(" | ").append(lstSeq.isEmpty() ? "-" : String.join("<br>", lstSeq))
+                        .append(" |\n");
+            }
+        }
+    }
+
+
+    /**
+     * The source list of the publication. The id links to the exact endpoint
+     * that was polled, so a reader can check a value against upstream by
+     * opening it.
+     */
+    private static void sourcesTable(StringBuilder sbOut, Map<String, Object> mapDs) {
+        sbOut.append("\n## Sources\n\n");
+        List<Map<String, Object>> lstSource = maps(mapDs.get("sources"));
+        if (lstSource.isEmpty()) {
+            sbOut.append("This publication carries no source list.\n");
+            return;
+        }
+        sbOut.append("| Source | Publisher | Authority | Polled every |\n");
+        sbOut.append("| --- | --- | --- | --- |\n");
+        for (Map<String, Object> mapSource : lstSource) {
+            String textId = md(val(mapSource, "id"));
+            String urlSource = val(mapSource, "url");
+            boolean bLink = urlSource != null && !urlSource.isBlank() && urlSource.chars()
+                    .noneMatch(chOne -> chOne == '<' || chOne == '>' || Character.isWhitespace(chOne));
+            String textPoll = val(mapSource, "pollSeconds");
+            sbOut.append("| ").append(bLink ? "[" + textId + "](<" + urlSource + ">)" : textId)
+                    .append(" | ").append(md(val(mapSource, "publisher")))
+                    .append(" | ").append(md(val(mapSource, "authority")))
+                    .append(" | ").append(textPoll == null ? "-" : md(textPoll) + " s")
+                    .append(" |\n");
+        }
+    }
+
+
+    /**
+     * A value as markdown text. Upstream writes these and nothing here edits
+     * them, so every character that would start markup or break a table cell is
+     * escaped rather than assumed absent.
+     *
+     * @param objValue the value, or null
+     * @return the escaped text, or a dash for nothing
+     */
+    static String md(Object objValue) {
+        if (objValue == null)
+            return "-";
+        String textIn = String.valueOf(objValue).replace('\r', ' ').replace('\n', ' ').trim();
+        if (textIn.isEmpty())
+            return "-";
+        StringBuilder sbOut = new StringBuilder(textIn.length() + 8);
+        for (int posChar = 0; posChar < textIn.length(); posChar++) {
+            char chOne = textIn.charAt(posChar);
+            if ("\\`*_[]<>|#&!".indexOf(chOne) >= 0) {
+                sbOut.append('\\');
+            }
+            sbOut.append(chOne);
+        }
+        return sbOut.toString();
+    }
+
+
+    /** The host part of a url, or the text itself when it does not parse. */
+    private static String host(String urlAny) {
+        if (urlAny == null)
+            return null;
+        try {
+            String nameHost = URI.create(urlAny.trim()).getHost();
+            return nameHost == null ? urlAny : nameHost;
+        }
+        catch (IllegalArgumentException e) {
+            return urlAny;
+        }
+    }
+
+
+    private static String nameNetwork(Map<String, Object> mapNetwork) {
+        String nameRaw = val(mapNetwork, "network");
+        if ("MAINNET".equals(nameRaw))
+            return "MainNet";
+        if ("TESTNET".equals(nameRaw))
+            return "TestNet";
+        if ("DEVNET".equals(nameRaw))
+            return "DevNet";
+        return nameRaw;
+    }
+
+
+    private static List<Map<String, Object>> networks(Map<String, Object> mapDs) {
+        return maps(mapDs.get("networks"));
+    }
+
+
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> maps(Object objList) {
+        List<Map<String, Object>> lstOut = new ArrayList<>();
+        if (!(objList instanceof List))
+            return lstOut;
+        for (Object objOne : (List<?>) objList) {
+            if (objOne instanceof Map) {
+                lstOut.add((Map<String, Object>) objOne);
+            }
+        }
+        return lstOut;
+    }
+
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> sub(Map<String, Object> mapAny, String nameField) {
+        if (mapAny == null)
+            return null;
+        Object objSub = mapAny.get(nameField);
+        return objSub instanceof Map ? (Map<String, Object>) objSub : null;
+    }
+
+
+    private static String val(Map<String, Object> mapAny, String nameField) {
+        if (mapAny == null)
+            return null;
+        Object objValue = mapAny.get(nameField);
+        return objValue == null ? null : String.valueOf(objValue);
+    }
+
+
+    /**
      * The whole consumer contract, regenerated with every data commit. Three
      * separate things a consumer depends on are stated here because there is
      * nowhere else for them to be stated: the path, the field names, and the
@@ -388,11 +693,12 @@ public final class GitPublish {
      * breaking a parser, so it has a section of its own.
      *
      * @param mapDs the corpus being committed
-     * @return the README text
+     * @return the text of `REAL_README.md`
      */
-    private String readme(Map<String, Object> mapDs) {
+    private String contract(Map<String, Object> mapDs) {
         StringBuilder sbOut = new StringBuilder(8192);
         sbOut.append("# Raposza Network Operations Feed - data\n\n");
+        sbOut.append("[Back to the data](").append(NAME_README).append(")\n\n");
         sbOut.append("BaseNet can be wired to this feed with a cron job, so that a local\n");
         sbOut.append("customization is tested against what the networks are scheduled to run\n");
         sbOut.append("before it becomes a problem. Pull `").append(NAME_VERSIONS).append("` on a schedule,")
@@ -408,8 +714,13 @@ public final class GitPublish {
         }
         sbOut.append("\n## Files\n\n");
         sbOut.append("- `").append(NAME_VERSIONS).append("` - the current state. Fetch this one.\n");
-        sbOut.append("- `").append(NAME_HISTORY).append("` - every state it has held, newest first.\n");
-        sbOut.append("- `").append(NAME_README).append("` - this file.\n");
+        sbOut.append("- `").append(NAME_README).append("` - the same data as tables, for a person. It also\n");
+        sbOut.append("  shows each Super Validator node's sequencer hosts, which `").append(NAME_VERSIONS)
+                .append("` does\n");
+        sbOut.append("  not carry. Not a contract: its layout may change without notice.\n");
+        sbOut.append("- `").append(NAME_CONTRACT).append("` - this file.\n\n");
+        sbOut.append("No history file is kept. The commit log of the data branch is the record of\n");
+        sbOut.append("every state `").append(NAME_VERSIONS).append("` has held.\n");
         fields(sbOut);
         sbOut.append("\n## Provenance\n\n");
         sbOut.append("Where this comes from, how often, and how it is put together. No value here\n");
@@ -440,10 +751,13 @@ public final class GitPublish {
         sbOut.append("placeholder and an empty field is never an outage.\n");
         sbOut.append("\n## Freshness\n\n");
         sbOut.append("`timestamp` moves on every publication, so it is not what this repository is\n");
-        sbOut.append("committed on: a commit is made when one of the values above it changes. No\n");
-        sbOut.append("commit means nothing changed, and the timestamp you read is the one of the\n");
-        sbOut.append("last change rather than of the last check. The heartbeat branch is what says\n");
-        sbOut.append("the writer is still running.\n");
+        sbOut.append("committed on: a commit is made when one of the values above it changes, or\n");
+        sbOut.append("when something `").append(NAME_README).append("` shows changes. No commit means")
+                .append(" nothing changed,\n");
+        sbOut.append("and the timestamp you read is the one of the last change rather than of the\n");
+        sbOut.append("last check. The heartbeat branch is what says the writer is still running.\n");
+        sbOut.append("A new release of the service that rewords these two files commits once with\n");
+        sbOut.append("no value moved.\n");
         sbOut.append("\n## Branches\n\n");
         sbOut.append("- `").append(spec.nameBranchData()).append("` - the data. One commit per change,")
                 .append(" ordinary history, nothing rewritten.\n");
@@ -509,14 +823,7 @@ public final class GitPublish {
         sbOut.append("Every version is a QUOTED STRING. Unquoted, `0.7` is a number to every yaml\n");
         sbOut.append("parser there is. `timestamp` and `date` are left unquoted so that they load as\n");
         sbOut.append("a timestamp and a date, and `migration-id` and `serial-id` are left unquoted\n");
-        sbOut.append("because upstream states them as numbers.\n\n");
-        sbOut.append("`").append(NAME_HISTORY).append("` is a list under one `history:` key, newest")
-                .append(" first. Each entry is a\n");
-        sbOut.append("full snapshot of `").append(NAME_VERSIONS).append("` as it stood, its timestamp")
-                .append(" included, so the\n");
-        sbOut.append("first entry always states what `").append(NAME_VERSIONS).append("` states now. An")
-                .append(" entry is added when a\n");
-        sbOut.append("value changes and at no other time, so consecutive entries are never equal.\n");
+        sbOut.append("because upstream states them as numbers.\n");
     }
 
 

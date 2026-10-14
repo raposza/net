@@ -46,7 +46,8 @@ class GitPublishTest {
         pub.turn(ds("pub_1", "2026-09-18T06:00:00Z", "0.8.1"));
         assertEquals(1, commits(dirBare, "main"));
         assertTrue(show(dirBare, "main", GitPublish.NAME_VERSIONS).contains("splice-latest: \"0.8.1\""));
-        assertTrue(show(dirBare, "main", GitPublish.NAME_README).contains("RAPOSZA TIMESTAMP"));
+        assertTrue(show(dirBare, "main", GitPublish.NAME_CONTRACT).contains("RAPOSZA TIMESTAMP"));
+        assertTrue(show(dirBare, "main", GitPublish.NAME_README).contains("(" + GitPublish.NAME_CONTRACT + ")"));
 
         pub.turn(ds("pub_2", "2026-09-18T06:01:00Z", "0.8.1"));
         assertEquals(1, commits(dirBare, "main"), "a new timestamp alone is not a change");
@@ -76,40 +77,73 @@ class GitPublishTest {
 
 
     @Test
-    void everyChangeIsAnEntryInTheHistoryFile() throws Exception {
+    void theReadmeShowsTheDataWithTheContractLinkedOnTop() throws Exception {
         Assumptions.assumeTrue(hasGit(), "git is not on the path");
         Path dirBare = bare();
         GitPublish pub = GitPublish.of(spec(dirBare, -1));
 
         pub.turn(ds("pub_1", "2026-09-18T06:00:00Z", "0.8.1"));
-        String textOne = show(dirBare, "main", GitPublish.NAME_HISTORY);
-        assertTrue(textOne.startsWith(History.LINE_HEADER + "\n"));
-        assertEquals(1, count(textOne, "  - timestamp: "));
-
-        pub.turn(ds("pub_2", "2026-09-18T06:01:00Z", "0.8.1"));
-        assertEquals(1, count(show(dirBare, "main", GitPublish.NAME_HISTORY), "  - timestamp: "),
-                "no change, no entry");
-
-        pub.turn(ds("pub_3", "2026-09-18T06:02:00Z", "0.8.2"));
-        String textThree = show(dirBare, "main", GitPublish.NAME_HISTORY);
-        assertEquals(2, count(textThree, "  - timestamp: "));
-        assertTrue(textThree.indexOf("2026-09-18T06:02:00Z") < textThree.indexOf("2026-09-18T06:00:00Z"),
-                "the newest entry is first");
-        assertTrue(textThree.contains("    splice-latest: \"0.8.1\""), "the older entry is kept whole");
+        String textReadme = show(dirBare, "main", GitPublish.NAME_README);
+        int posLink = textReadme.indexOf("[" + GitPublish.NAME_CONTRACT + "](" + GitPublish.NAME_CONTRACT + ")");
+        assertTrue(posLink > 0, textReadme);
+        assertTrue(posLink < textReadme.indexOf("## Latest Splice release"), "the link is above the data");
+        assertTrue(textReadme.indexOf("## Latest Splice release") < textReadme.indexOf("## Networks"));
+        assertTrue(textReadme.contains("**0.8.1**"), textReadme);
+        assertTrue(textReadme.contains("| MainNet | 0.8.1 | 0.8.1 | 0.7.5 | - | 0.7 | 0.8.0 | 2026-09-21 |"),
+                textReadme);
+        assertTrue(textReadme.contains("| sv\\_one | 0.8.1 | scan.sv-one.example | 2: seq-2.sv-one.example<br>"
+                + "1: seq-1.sv-one.example *(other serial)* |"), textReadme);
+        assertTrue(textReadme.contains("### TestNet\n\n0 nodes.\n\nNo node reported."), textReadme);
+        assertTrue(textReadme.contains("Not the production feed"), "a rehearsal repository says so on top");
+        assertTrue(textReadme.contains("\n" + GitPublish.LINE_STAMP + "2026-09-18T06:00:00Z.\n"), textReadme);
+        assertFalse(show(dirBare, "main", GitPublish.NAME_CONTRACT).contains("history.yml"));
     }
 
 
     @Test
-    void refusesToRewriteAHistoryFileItDidNotWrite() throws Exception {
-        Path fileHistory = dirTmp.resolve(GitPublish.NAME_HISTORY);
-        Files.write(fileHistory, "# hand written\nsomething: else\n".getBytes(StandardCharsets.UTF_8));
-        try {
-            History.prepend(fileHistory, "timestamp: 2026-09-18T06:00:00Z\n");
-            throw new IllegalStateException("a file that does not open with the header was accepted");
-        }
-        catch (IOException e) {
-            assertTrue(e.getMessage().contains("refusing to rewrite"));
-        }
+    void commitsWhenOnlyWhatTheReadmeShowsMoves() throws Exception {
+        Assumptions.assumeTrue(hasGit(), "git is not on the path");
+        Path dirBare = bare();
+        GitPublish pub = GitPublish.of(spec(dirBare, -1));
+
+        pub.turn(ds("pub_1", "2026-09-18T06:00:00Z", "0.8.1"));
+        String textVersions = show(dirBare, "main", GitPublish.NAME_VERSIONS);
+        pub.turn(ds("pub_2", "2026-09-18T06:01:00Z", "0.8.1", "https://seq-3.sv-one.example/"));
+        assertEquals(2, commits(dirBare, "main"), "a sequencer host is shown in the README alone");
+        assertEquals(textVersions, show(dirBare, "main", GitPublish.NAME_VERSIONS).replace(
+                "2026-09-18T06:01:00Z", "2026-09-18T06:00:00Z"), "versions.yml carries no sequencer");
+        assertTrue(show(dirBare, "main", GitPublish.NAME_README).contains("seq-3.sv-one.example"));
+    }
+
+
+    @Test
+    void replacesTheOldShapeWithoutRewritingTheLog() throws Exception {
+        Assumptions.assumeTrue(hasGit(), "git is not on the path");
+        Path dirBare = bare();
+        Map<String, Object> mapDs = ds("pub_1", "2026-09-18T06:00:00Z", "0.8.1");
+        Path dirOld = Files.createDirectories(dirTmp.resolve("old"));
+        git(dirOld, "init", "-q", "-b", "main", ".");
+        git(dirOld, "config", "user.name", "test");
+        git(dirOld, "config", "user.email", "test@example.invalid");
+        Files.write(dirOld.resolve(GitPublish.NAME_VERSIONS),
+                Versions.yaml(mapDs).getBytes(StandardCharsets.UTF_8));
+        Files.write(dirOld.resolve("history.yml"), "history:\n".getBytes(StandardCharsets.UTF_8));
+        Files.write(dirOld.resolve(GitPublish.NAME_README), "# the contract\n".getBytes(StandardCharsets.UTF_8));
+        git(dirOld, "add", "-A");
+        git(dirOld, "commit", "-q", "-m", "publication pub_0");
+        git(dirOld, "push", "-q", dirBare.toUri().toString(), "HEAD:refs/heads/main");
+        String shaOld = git(dirBare, "rev-parse", "main").trim();
+
+        GitPublish.of(spec(dirBare, -1)).turn(ds("pub_2", "2026-09-18T06:01:00Z", "0.8.1"));
+        assertEquals(2, commits(dirBare, "main"), "the first turn replaces the shape though no value moved");
+        assertEquals(shaOld, git(dirBare, "rev-parse", "main~1").trim(), "the old commit is kept");
+        List<String> lstTracked = new ArrayList<>(
+                List.of(git(dirBare, "ls-tree", "--name-only", "main").trim().split("\n")));
+        Collections.sort(lstTracked);
+        List<String> lstWanted = new ArrayList<>(
+                List.of(GitPublish.NAME_VERSIONS, GitPublish.NAME_README, GitPublish.NAME_CONTRACT));
+        Collections.sort(lstWanted);
+        assertEquals(lstWanted, lstTracked, "history.yml is gone from the branch");
     }
 
 
@@ -123,12 +157,13 @@ class GitPublishTest {
         Path dirTree = dirTmp.resolve("work").resolve("data");
         Files.write(dirTree.resolve("state.json"), "{}\n".getBytes(StandardCharsets.UTF_8));
         Files.write(dirTree.resolve("versions.txt"), "MainNet: 0.7.5\n".getBytes(StandardCharsets.UTF_8));
+        Files.write(dirTree.resolve("history.yml"), "history:\n".getBytes(StandardCharsets.UTF_8));
 
         pub.turn(ds("pub_2", "2026-09-18T06:02:00Z", "0.8.2"));
         List<String> lstTracked = new ArrayList<>(
                 List.of(git(dirBare, "ls-tree", "--name-only", "main").trim().split("\n")));
         List<String> lstWanted = new ArrayList<>(
-                List.of(GitPublish.NAME_VERSIONS, GitPublish.NAME_HISTORY, GitPublish.NAME_README));
+                List.of(GitPublish.NAME_VERSIONS, GitPublish.NAME_README, GitPublish.NAME_CONTRACT));
         Collections.sort(lstTracked);
         Collections.sort(lstWanted);
         assertEquals(lstWanted, lstTracked,
@@ -225,14 +260,32 @@ class GitPublishTest {
     /**
      * A corpus of the shape the publication reduces: three networks carrying a
      * scheduled version, a minimum and the next upgrade, and one release event
-     * behind `splice-latest`.
+     * behind `splice-latest`. MainNet also reports what it runs and one Super
+     * Validator node, which lists a sequencer on the current serial and one on
+     * the previous.
      */
     private static Map<String, Object> ds(String idPublication, String stampCreated, String verSplice) {
+        return ds(idPublication, stampCreated, verSplice, "https://seq-2.sv-one.example/");
+    }
+
+
+    private static Map<String, Object> ds(String idPublication, String stampCreated, String verSplice,
+            String urlSequencer) {
+        Map<String, Object> mapMain = net("MAINNET", "0.7.5", "0.7", "0.8.0", "2026-09-21", idPublication,
+                stampCreated);
+        mapMain.put("deployment", Dataset.map("version", "0.8.1", "svVersion", "0.8.1", "serialId", "2"));
+        mapMain.put("superValidators", List.of(Dataset.map(
+                "name", "sv_one",
+                "version", "0.8.1",
+                "scan", "https://scan.sv-one.example/api/scan",
+                "sequencers", List.of(
+                        Dataset.map("serial", "2", "url", urlSequencer),
+                        Dataset.map("serial", "1", "url", "https://seq-1.sv-one.example/")))));
         return Dataset.map(
                 "metadata", Dataset.map("publicationId", idPublication, "createdAt", stampCreated,
                         "content", GitPublish.CONTENT_OBSERVED),
                 "networks", List.of(
-                        net("MAINNET", "0.7.5", "0.7", "0.8.0", "2026-09-21", idPublication, stampCreated),
+                        mapMain,
                         net("TESTNET", "0.8.0", "0.7", null, null, idPublication, stampCreated),
                         net("DEVNET", "0.8.1", "0.7", "0.8.2", "2026-09-24", idPublication, stampCreated)),
                 "events", List.of(Dataset.map(
@@ -249,17 +302,6 @@ class GitPublishTest {
                 "next", Dataset.map("version", verNext, "from", dayNext),
                 "publicationId", idPublication,
                 "updatedAt", stampCreated);
-    }
-
-
-    private static int count(String textIn, String textFind) {
-        int cntHit = 0;
-        int posAt = textIn.indexOf(textFind);
-        while (posAt >= 0) {
-            cntHit++;
-            posAt = textIn.indexOf(textFind, posAt + textFind.length());
-        }
-        return cntHit;
     }
 
 

@@ -209,19 +209,6 @@ class PublishTest {
 
 
     @Test
-    void theHistoryEntryIsTheWholeVersionsFileReindented() throws Exception {
-        String textYaml = Versions.yaml(withReleases());
-        String textEntry = History.entry(textYaml);
-        assertTrue(textEntry.startsWith("  - timestamp: 2026-09-18T00:00:00Z\n"), textEntry);
-        assertTrue(textEntry.contains("\n    networks:\n"), textEntry);
-        assertTrue(textEntry.contains("\n      mainnet:\n"), textEntry);
-        assertTrue(textEntry.endsWith("\n    splice-latest: \"0.8.3\"\n"), textEntry);
-        assertEquals(textYaml.split("\n").length, textEntry.split("\n").length,
-                "an entry carries every line of the file and no other");
-    }
-
-
-    @Test
     void theTimestampIsTheOnlyLineTheChangeUnitIgnores() throws Exception {
         String textYaml = Versions.yaml(withReleases());
         String textCut = Versions.withoutTimestamp(textYaml);

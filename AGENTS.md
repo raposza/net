@@ -99,23 +99,23 @@ on: per network the version it reports it is RUNNING and the SV application
 version beside it, the minimum in force and the next upgrade ahead from the
 schedule, the migration and chain identity, the successor and legacy versions
 when a migration is staged, and every Super Validator node with the version it
-reports; then the latest Splice release that exists. `history.yml` is
-every state that file has held, newest first, each entry a full snapshot of it -
-the accumulated record is the one thing here a reader cannot rebuild from
-anywhere else, so it is published as a file rather than left to a commit log. The
-README carries the consumer contract, because there is nowhere else for it to
-live, and a Fields section stating what each field means, since a field whose
-meaning is guessed breaks a consumer's logic without breaking its parser.
+reports; then the latest Splice release that exists. `README.md` is the same data
+as tables, because it is the page GitHub shows first: the latest release, the
+networks, every Super Validator node with its scan and sequencer hosts, and the
+sources. A link at its top leads to `REAL_README.md`, which carries the consumer
+contract and a Fields section stating what each field means, since a field whose
+meaning is guessed breaks a consumer's logic without breaking its parser. No
+history file is kept; the commit log is the record.
 
 Nothing is written unless the publication was derived from banked observations,
 so an environment that has observed nothing leaves the repository as it was
-rather than committing a file of nulls. A commit is then made only when the
-values MOVED: the comparison is `versions.yml` with its `timestamp` line dropped,
-because that line moves on every publication by design. The committed file
-carries it. Both files are built in memory before either is written, so a history
-file that cannot be read leaves the branch untouched instead of leaving a current
-state with no record behind it - and a history file that does not open with the
-line this code wrote is REFUSED rather than replaced.
+rather than committing a file of nulls. A commit is then made only when something
+MOVED: `versions.yml` with its `timestamp` line dropped, `README.md` with its one
+stamp line dropped, `REAL_README.md` as written, or a file on the branch that
+this code does not write, which is removed in the same commit. The README counts
+because it shows the sequencer hosts and `versions.yml` does not. The committed
+files carry the lines the comparison drops. All three are built in memory before
+any is written.
 
 The data branch is ordinary git: every change is a commit on top of the last,
 nothing is amended and nothing is force-pushed. Liveness is a branch of its own:

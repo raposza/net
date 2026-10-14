@@ -4,6 +4,22 @@
 Releases before 0.2.0 carried no version and no tag; their history is the commit
 log.
 
+## 0.8.0
+
+- BREAKING, the data repository. `history.yml` is gone. The commit log of the
+  data branch is the record of every state `versions.yml` has held, and nothing
+  in it is rewritten. The first publication of this build removes the file in a
+  commit of its own, whether or not a value moved.
+- The data repository's `README.md` is the data, as the web page shows it: the
+  latest Splice release, the networks with what each reports running beside what
+  is scheduled, every Super Validator node with its scan and sequencer hosts, and
+  the sources. A link at its top leads to `REAL_README.md`, which carries the
+  consumer contract `README.md` carried until now. Text a source supplied is
+  escaped where it is written into the README.
+- A data commit is made when `versions.yml` moves, its `timestamp` aside, when
+  what `README.md` shows moves - the sequencer hosts are there and not in
+  `versions.yml` - or when the contract is reworded.
+
 ## 0.7.1
 
 - The web page carries a Super Validators section, one table per network: each
