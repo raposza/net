@@ -46,6 +46,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * correction. Nothing here is derived from the date passing: STARTED and
  * COMPLETED are not published, because no observation says either happened.
  *
+ * A version_status of UNAVAILABLE means upstream could not read the version
+ * this time. The event then keeps the version it was last seen with, and only
+ * the status moves, so an observation failure and its recovery are never read as
+ * a version going away and coming back.
+ *
  * Only banked bodies are replayed. A poll that found the body unchanged saw the
  * same records again and changes no event; when a record was last SEEN is the
  * last poll that saw its last body, which the poll attempts in the index hold.
@@ -63,7 +68,7 @@ public final class Events {
     public static final List<String> LST_FIELD = List.of("kind", "network", "status", "effective.from",
             "effective.to", "version", "version.precision", "version.change", "title", "description",
             "upstream.type", "commit_sha", "commit_time", "sv_version", "migration_id", "serial_id", "chain_id_suffix",
-            "successor_version", "legacy_version", "scan_url", "sequencers", "withdrawn");
+            "successor_version", "legacy_version", "scan_url", "sequencers", "version_status", "withdrawn");
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -214,6 +219,7 @@ public final class Events {
                     continue;
                 }
                 mapNew.put("withdrawn", "false");
+                keepUnreadVersion(stateOld.mapField, mapNew);
                 stateOld.lastBankedAt = snap.bankedAt();
                 stateOld.lastObservationId = snap.observationId();
                 List<Change> lstChange = changes(stateOld.mapField, mapNew);
@@ -229,6 +235,21 @@ public final class Events {
                     state.lastBankedAt, state.lastObservationId));
         }
         return new Result(lstEvent, lstRevision, lstRecord);
+    }
+
+
+    /**
+     * Where upstream could not read a version this time, the version last read
+     * stands; the status says it is not current.
+     *
+     * @param mapOld the event's fields before this observation
+     * @param mapNew its fields as this observation claims them, changed in place
+     */
+    static void keepUnreadVersion(Map<String, String> mapOld, Map<String, String> mapNew) {
+        if (mapNew.get("version_status") != null && mapNew.get("version") == null) {
+            mapNew.put("version", mapOld.get("version"));
+            mapNew.put("version.precision", mapOld.get("version.precision"));
+        }
     }
 
 
@@ -285,7 +306,7 @@ public final class Events {
         String sqlRead = "select id, source_id, subject_ref, kind, network, status, effective_from,"
                 + " effective_to, version, version_precision, version_change, title, description,"
                 + " upstream_type, commit_sha, commit_time, sv_version, migration_id, serial_id, chain_id_suffix,"
-                + " successor_version, legacy_version, scan_url, sequencers, withdrawn, revision,"
+                + " successor_version, legacy_version, scan_url, sequencers, version_status, withdrawn, revision,"
                 + " first_observed_at, last_banked_at,"
                 + " last_observation_id from event";
         Map<String, List<Event>> mapSource = new TreeMap<>();
@@ -313,10 +334,11 @@ public final class Events {
                 mapField.put("legacy_version", rs.getString(22));
                 mapField.put("scan_url", rs.getString(23));
                 mapField.put("sequencers", rs.getString(24));
-                mapField.put("withdrawn", rs.getBoolean(25) ? "true" : "false");
-                Event evt = new Event(rs.getString(1), rs.getString(3), mapField, rs.getInt(26),
-                        rs.getObject(27, OffsetDateTime.class).toInstant(),
-                        rs.getObject(28, OffsetDateTime.class).toInstant(), rs.getString(29));
+                mapField.put("version_status", rs.getString(25));
+                mapField.put("withdrawn", rs.getBoolean(26) ? "true" : "false");
+                Event evt = new Event(rs.getString(1), rs.getString(3), mapField, rs.getInt(27),
+                        rs.getObject(28, OffsetDateTime.class).toInstant(),
+                        rs.getObject(29, OffsetDateTime.class).toInstant(), rs.getString(30));
                 mapSource.computeIfAbsent(rs.getString(2), idNew -> new ArrayList<>()).add(evt);
             }
         }
@@ -387,6 +409,7 @@ public final class Events {
                             "legacyVersion", mapField.get("legacy_version")),
                     "scan_url", mapField.get("scan_url"),
                     "sequencers", sequencers(mapField.get("sequencers")),
+                    "versionStatus", mapField.get("version_status"),
                     "revision", Integer.valueOf(evt.revision()),
                     "firstObservedAt", Dataset.iso(evt.firstObservedAt()),
                     "lastBankedAt", Dataset.iso(evt.lastBankedAt()),
@@ -706,9 +729,9 @@ public final class Events {
         String sqlIns = "insert into event (id, source_id, subject_ref, kind, network, status, effective_from,"
                 + " effective_to, version, version_precision, version_change, title, description, upstream_type,"
                 + " commit_sha, commit_time, sv_version, migration_id, serial_id, chain_id_suffix,"
-                + " successor_version, legacy_version, scan_url, sequencers, withdrawn, revision,"
+                + " successor_version, legacy_version, scan_url, sequencers, version_status, withdrawn, revision,"
                 + " first_observed_at, last_banked_at, last_observation_id)"
-                + " values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+                + " values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
         try (PreparedStatement stmt = conn.prepareStatement(sqlIns)) {
             for (Event evt : lstEvent) {
                 Map<String, String> mapField = evt.mapField();
@@ -736,11 +759,12 @@ public final class Events {
                 stmt.setString(22, mapField.get("legacy_version"));
                 stmt.setString(23, mapField.get("scan_url"));
                 stmt.setString(24, mapField.get("sequencers"));
-                stmt.setBoolean(25, "true".equals(mapField.get("withdrawn")));
-                stmt.setInt(26, evt.revision());
-                stmt.setObject(27, OffsetDateTime.ofInstant(evt.firstObservedAt(), ZoneOffset.UTC));
-                stmt.setObject(28, OffsetDateTime.ofInstant(evt.lastBankedAt(), ZoneOffset.UTC));
-                stmt.setString(29, evt.lastObservationId());
+                stmt.setString(25, mapField.get("version_status"));
+                stmt.setBoolean(26, "true".equals(mapField.get("withdrawn")));
+                stmt.setInt(27, evt.revision());
+                stmt.setObject(28, OffsetDateTime.ofInstant(evt.firstObservedAt(), ZoneOffset.UTC));
+                stmt.setObject(29, OffsetDateTime.ofInstant(evt.lastBankedAt(), ZoneOffset.UTC));
+                stmt.setString(30, evt.lastObservationId());
                 stmt.addBatch();
             }
             if (!lstEvent.isEmpty()) {

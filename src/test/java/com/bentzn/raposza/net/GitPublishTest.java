@@ -89,10 +89,12 @@ class GitPublishTest {
         assertTrue(posLink < textReadme.indexOf("## Latest Splice release"), "the link is above the data");
         assertTrue(textReadme.indexOf("## Latest Splice release") < textReadme.indexOf("## Networks"));
         assertTrue(textReadme.contains("**0.8.1**"), textReadme);
-        assertTrue(textReadme.contains("| MainNet | 0.8.1 | 0.8.1 | 0.7.5 | - | 0.7 | 0.8.0 | 2026-09-21 |"),
+        assertTrue(textReadme.startsWith("# Raposza Network Operations Feed\n\n**The web page: ["), textReadme);
+        assertTrue(textReadme.indexOf("**The web page: [") < posLink, "the page is linked above the contract");
+        assertTrue(textReadme.contains("| MainNet | 0.7.5 | - | - | 0.7 | 0.8.0 | 2026-09-21 | 0.8.1 |"),
                 textReadme);
         assertTrue(textReadme.contains("| sv\\_one | 0.8.1 | scan.sv-one.example | 2: seq-2.sv-one.example<br>"
-                + "1: seq-1.sv-one.example *(other serial)* |"), textReadme);
+                + "1: seq-1.sv-one.example *(legacy)* |"), textReadme);
         assertTrue(textReadme.contains("### TestNet\n\n0 nodes.\n\nNo node reported."), textReadme);
         assertTrue(textReadme.contains("Not the production feed"), "a rehearsal repository says so on top");
         assertTrue(textReadme.contains("\n" + GitPublish.LINE_STAMP + "2026-09-18T06:00:00Z.\n"), textReadme);
@@ -108,10 +110,19 @@ class GitPublishTest {
 
         pub.turn(ds("pub_1", "2026-09-18T06:00:00Z", "0.8.1"));
         String textVersions = show(dirBare, "main", GitPublish.NAME_VERSIONS);
-        pub.turn(ds("pub_2", "2026-09-18T06:01:00Z", "0.8.1", "https://seq-3.sv-one.example/"));
-        assertEquals(2, commits(dirBare, "main"), "a sequencer host is shown in the README alone");
+        Map<String, Object> mapListed = ds("pub_2", "2026-09-18T06:01:00Z", "0.8.1");
+        mapListed.put("sources", List.of(Dataset.map("id", "test-source", "url", "https://example.invalid/source",
+                "publisher", "test", "authority", "OFFICIAL", "pollSeconds", Integer.valueOf(300))));
+        pub.turn(mapListed);
+        assertEquals(2, commits(dirBare, "main"), "the source list is shown in the README alone");
         assertEquals(textVersions, show(dirBare, "main", GitPublish.NAME_VERSIONS).replace(
-                "2026-09-18T06:01:00Z", "2026-09-18T06:00:00Z"), "versions.yml carries no sequencer");
+                "2026-09-18T06:01:00Z", "2026-09-18T06:00:00Z"), "versions.yml carries no source list");
+        assertTrue(show(dirBare, "main", GitPublish.NAME_README).contains("test-source"));
+
+        pub.turn(ds("pub_3", "2026-09-18T06:02:00Z", "0.8.1", "https://seq-3.sv-one.example/"));
+        assertEquals(3, commits(dirBare, "main"), "a moved sequencer host commits");
+        assertTrue(show(dirBare, "main", GitPublish.NAME_VERSIONS).contains("url: \"https://seq-3.sv-one.example/\""),
+                "versions.yml carries the sequencers the README shows");
         assertTrue(show(dirBare, "main", GitPublish.NAME_README).contains("seq-3.sv-one.example"));
     }
 

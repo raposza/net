@@ -68,6 +68,11 @@ FEED_COLLECT                    whether the worker acquires, default false;
                                 true only where the record is kept
 FEED_EVIDENCE_DIR               evidence store root, default ./evidence
 FEED_JOURNAL_DIR                poll journal root, default ./journal
+FEED_PRICES_DIR                 price record root, default prices beside the
+                                journal root
+FEED_PRICE_POLL_SECONDS         seconds between two reads of every price
+                                source by a worker that acquires, default 900;
+                                zero or less reads no price
 FEED_GIT_DIR                    git mirror cache root, default ./git
 FEED_DB_DIR                     embedded index root, default ./db
 FEED_DB_URL                     jdbc url; defaults to an H2 file under
@@ -94,13 +99,16 @@ FEED_GITHUB_TOKEN               credential the release call authenticates with,
 ```
 
 The git publication channel mirrors each publication into a repository of three
-files. `versions.yml` is the current state, reduced to the values a consumer acts
-on: per network the version it reports it is RUNNING and the SV application
-version beside it, the minimum in force and the next upgrade ahead from the
-schedule, the migration and chain identity, the successor and legacy versions
-when a migration is staged, and every Super Validator node with the version it
-reports; then the latest Splice release that exists. `README.md` is the same data
-as tables, because it is the page GitHub shows first: the latest release, the
+files. `versions.yml` is the current state as the web page and `README.md` show
+it, under the same names, in machine-readable form: per network `current` - the
+last confirmed upgrade on the schedule whose date has arrived - with how many
+Super Validator nodes report it, the minimum in force, the next upgrade ahead,
+the version the network's own info document reports, the migration and serial
+ids, the successor and legacy versions when a migration is staged, and every
+Super Validator node with its version, scan url and sequencers, each marked
+legacy or successor; then the latest Splice release that exists. `README.md` is the same data
+as tables, because it is the page GitHub shows first, with a link to the web page
+on top: the latest release, the
 networks, every Super Validator node with its scan and sequencer hosts, and the
 sources. A link at its top leads to `REAL_README.md`, which carries the consumer
 contract and a Fields section stating what each field means, since a field whose
@@ -113,7 +121,7 @@ rather than committing a file of nulls. A commit is then made only when somethin
 MOVED: `versions.yml` with its `timestamp` line dropped, `README.md` with its one
 stamp line dropped, `REAL_README.md` as written, or a file on the branch that
 this code does not write, which is removed in the same commit. The README counts
-because it shows the sequencer hosts and `versions.yml` does not. The committed
+because it shows the sources and `versions.yml` does not. The committed
 files carry the lines the comparison drops. All three are built in memory before
 any is written.
 
@@ -149,12 +157,13 @@ stop the worker, run the role, start it again.
 
 ## What is primary and what is derived
 
-Three things on disk, and only two of them matter.
+Four things on disk, and three of them matter.
 
 ```
 evidence/   retrieved bodies, content-addressed.  PRIMARY, irreplaceable
 journal/    one appended line per poll.           PRIMARY, irreplaceable
-db/         an embedded index over both.          DERIVED, throw away freely
+prices/     one appended line per price read.     PRIMARY, irreplaceable
+db/         an index over evidence and journal.   DERIVED, throw away freely
 ```
 
 The evidence store holds bytes that cannot be fetched again once upstream
@@ -170,8 +179,25 @@ recoverable state and not a loss, and there are no migrations: the index records
 the digest of the schema it was built with, and a worker or `collect` run that
 carries another schema drops the index and rebuilds it.
 
-Back up `evidence/` and `journal/`. Backing up `db/` is optional and only saves
-the replay.
+Back up `evidence/`, `journal/` and `prices/`. Backing up `db/` is optional and
+only saves the replay.
+
+## Prices
+
+The CC/USD price is a time series, not a state, so it is kept apart from the
+evidence store, which banks a body only when its bytes say something new and
+would bank every ticker on every poll. `src/main/resources/prices.json` defines
+the price sources: the rate each network votes into its open mining round, read
+from its DSO document, and the spot tickers of the trading venues. A worker that
+acquires reads all of them at once every `FEED_PRICE_POLL_SECONDS` and appends
+one line per source to `prices/readings.jsonl`, forced to disk: the values as
+the decimals the source gave, in plain notation, and the part of the body they were read
+from - the whole ticker, or the payload of the open mining round - so a reading
+can be checked against what came back. A read that failed is a line too.
+`prices/latest.json` holds each source's newest success and newest attempt; it
+is derived and rebuilds from the record when it is missing. Each publication
+carries it as `prices.json`, served at `/api/v1/prices` and shown on
+`/prices.html`. A quote is in the currency its pair names; USDT is not USD.
 
 ## Sources and collection
 

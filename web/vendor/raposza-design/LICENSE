@@ -1,0 +1,10 @@
+raposza-design 0.4.0 - the web half, vendored
+
+tokens.css, fonts.css    Apache License 2.0, as stated in each file's
+                         SPDX-License-Identifier header
+Inter 4.1                SIL Open Font License 1.1, LICENSE-Inter.txt
+Hack v3.003              MIT License, with the Bitstream Vera License for the
+                         glyphs derived from Bitstream Vera Sans Mono,
+                         LICENSE-Hack.md
+
+The fonts are the upstream release files, unmodified.

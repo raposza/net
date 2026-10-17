@@ -160,6 +160,7 @@ create table if not exists event (
     legacy_version      varchar(50),
     scan_url            varchar(1000),
     sequencers          varchar(4000),
+    version_status      varchar(30),
     withdrawn           boolean      not null,
     revision            integer      not null,
     first_observed_at   timestamp with time zone not null,

@@ -1,0 +1,65 @@
+/*
+ * Copyright (c) 2026 bentzn
+ * SPDX-License-Identifier: Apache-2.0
+ * Author Claude/bentzn
+ * Generated 2026-09-24T08:00:00Z
+ *
+ * The @font-face rules for Inter and Hack. The URLs are relative to this
+ * file, so it works wherever /raposza/ is served from. Use with tokens.css:
+ *
+ *     <link rel="stylesheet" href="/raposza/fonts.css">
+ *     <link rel="stylesheet" href="/raposza/tokens.css">
+ *     body { font-family: var(--rz-font-sans); }
+ *     code, pre { font-family: var(--rz-font-mono); }
+ *
+ * Inter is its variable font, one file per slant covering weights 100-900.
+ * Inter: SIL Open Font License 1.1, fonts/LICENSE-Inter.txt.
+ * Hack: fonts/LICENSE-Hack.md.
+ */
+@font-face {
+    font-family: "Inter";
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url("InterVariable.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "Inter";
+    font-style: italic;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url("InterVariable-Italic.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "Hack";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url("hack-regular.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "Hack";
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url("hack-bold.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "Hack";
+    font-style: italic;
+    font-weight: 400;
+    font-display: swap;
+    src: url("hack-italic.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "Hack";
+    font-style: italic;
+    font-weight: 700;
+    font-display: swap;
+    src: url("hack-bolditalic.woff2") format("woff2");
+}

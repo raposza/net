@@ -37,12 +37,19 @@ import java.util.regex.Pattern;
  * Rows are sorted by name, so a body upstream merely re-ordered produces the
  * same claims and makes no revision.
  *
+ * A version column that holds no version - upstream writes "<date>: Failed to
+ * fetch version" when it could not ask the node - is an OBSERVATION FAILURE,
+ * not a version. It yields no version claim and a version_status of
+ * UNAVAILABLE instead, and the event keeps the version it was last seen with
+ * (Events), so a node that could not be asked does not read as one that
+ * changed.
+ *
  * Author Claude/bentzn
  */
 public final class SvVersionsNormalizer implements Normalizer {
 
     /** The identifier and version of what this class produces. */
-    public static final String ID = "SvVersionsNormalizer@1";
+    public static final String ID = "SvVersionsNormalizer@2";
 
     /** The header the body must open with, fields trimmed. */
     public static final List<String> LST_HEADER = List.of("SV Name", "Scan URL", "Version");
@@ -54,6 +61,9 @@ public final class SvVersionsNormalizer implements Normalizer {
     private static final String HIGH = "HIGH";
 
     private static final String REVIEW = "REQUIRES_REVIEW";
+
+    /** The version_status of a node whose version upstream could not read. */
+    public static final String STATUS_UNAVAILABLE = "UNAVAILABLE";
 
     private static final Pattern PAT_PATCH = Pattern.compile("([0-9]+)\\.([0-9]+)\\.([0-9]+)");
 
@@ -152,7 +162,7 @@ public final class SvVersionsNormalizer implements Normalizer {
             lstOut.add(claim(nameSv, "version", textValue, "MINOR", textValue, HIGH));
         }
         else {
-            lstOut.add(claim(nameSv, "version", null, null, textValue, REVIEW));
+            lstOut.add(claim(nameSv, "version_status", STATUS_UNAVAILABLE, null, textValue, REVIEW));
         }
     }
 

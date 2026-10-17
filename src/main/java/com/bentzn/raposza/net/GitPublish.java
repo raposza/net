@@ -450,8 +450,15 @@ public final class GitPublish {
     /**
      * The README: the data first, the way the web page shows it, so a person
      * arriving at the repository sees what the networks run before anything
-     * about how it is published. The link to the contract is the one thing above
-     * it.
+     * about how it is published. It is also the page for readers who cannot reach
+     * the web page, so the link to that page opens it, and the link to the
+     * contract follows.
+     *
+     * It carries the part of the page that moves only when the networks move: no
+     * planned events, whose window rolls daily, no change log, which the commit
+     * log already is, and no node that upstream could not read at this one
+     * poll, which would commit a failure and its recovery. What the page alone
+     * shows is said at the top.
      *
      * Everything here is drawn from the publication, never typed. The one line
      * that moves on every publication opens with LINE_STAMP and is dropped when
@@ -464,6 +471,11 @@ public final class GitPublish {
     String readme(Map<String, Object> mapDs) {
         StringBuilder sbOut = new StringBuilder(16384);
         sbOut.append("# Raposza Network Operations Feed\n\n");
+        String urlPage = webPage(spec.nameEnvironment());
+        sbOut.append("**The web page: [").append(md(urlPage)).append("](").append(urlPage).append(")** - this\n");
+        sbOut.append("README carries part of it, for readers who cannot reach it. The planned events\n");
+        sbOut.append("of the coming weeks, the log of what changed, and the freshness of each source\n");
+        sbOut.append("are on the page only.\n\n");
         sbOut.append("**Read [").append(NAME_CONTRACT).append("](").append(NAME_CONTRACT)
                 .append(") before you build on this data** - what every field\n");
         sbOut.append("means, where it comes from, and what is guaranteed.\n\n");
@@ -497,24 +509,27 @@ public final class GitPublish {
 
     private static void networksTable(StringBuilder sbOut, Map<String, Object> mapDs) {
         sbOut.append("\n## Networks\n\n");
-        sbOut.append("Running and SV app are what the network itself reports. Scheduled and Since\n");
-        sbOut.append("are the last confirmed upgrade on the operations schedule whose date has\n");
-        sbOut.append("arrived; Next and Due are the earliest upgrade still ahead, tentative ones\n");
-        sbOut.append("included; Minimum is the minimum version in force.\n\n");
-        sbOut.append("| Network | Running | SV app | Scheduled | Since | Minimum | Next | Due |\n");
+        sbOut.append("Current is the last confirmed upgrade on the SV Operations Schedule whose date\n");
+        sbOut.append("has arrived; the schedule states what the operators intend, so a date that has\n");
+        sbOut.append("arrived is not proof the upgrade ran. SVs on it counts the Super Validator\n");
+        sbOut.append("nodes whose own roster entry reports that version. Minimum is the oldest\n");
+        sbOut.append("version a validator may run. Next and Due are the earliest upgrade still\n");
+        sbOut.append("ahead, confirmed or not. Reported is the version the network's own info\n");
+        sbOut.append("document states.\n\n");
+        sbOut.append("| Network | Current (scheduled) | SVs on it | Since | Minimum | Next | Due | Reported |\n");
         sbOut.append("| --- | --- | --- | --- | --- | --- | --- | --- |\n");
         for (Map<String, Object> mapNetwork : networks(mapDs)) {
             Map<String, Object> mapSplice = sub(mapNetwork, "splice");
             Map<String, Object> mapNext = sub(mapNetwork, "next");
             Map<String, Object> mapDeploy = sub(mapNetwork, "deployment");
             sbOut.append("| ").append(md(nameNetwork(mapNetwork)))
-                    .append(" | ").append(md(val(mapDeploy, "version")))
-                    .append(" | ").append(md(val(mapDeploy, "svVersion")))
                     .append(" | ").append(md(val(mapSplice, "scheduledVersion")))
+                    .append(" | ").append(md(onScheduled(sub(mapNetwork, "roster"))))
                     .append(" | ").append(md(val(mapSplice, "scheduledFrom")))
                     .append(" | ").append(md(val(mapSplice, "minimumVersion")))
                     .append(" | ").append(md(val(mapNext, "version")))
                     .append(" | ").append(md(val(mapNext, "from")))
+                    .append(" | ").append(md(val(mapDeploy, "version")))
                     .append(" |\n");
         }
     }
@@ -522,8 +537,8 @@ public final class GitPublish {
 
     /**
      * One table per network, as the web page has it. A sequencer whose serial is
-     * not the one the network reports as current is marked; where the network
-     * reports no serial, none is marked.
+     * below the one the network reports as current is marked legacy, one above it
+     * successor; where the network reports no serial, none is marked.
      */
     private static void superValidators(StringBuilder sbOut, Map<String, Object> mapDs) {
         sbOut.append("\n## Super Validators\n\n");
@@ -531,8 +546,8 @@ public final class GitPublish {
         sbOut.append("document states them. Scan is the node's public read endpoint. A participant\n");
         sbOut.append("connects to a sequencer, and the sequencer changes at every synchronizer\n");
         sbOut.append("serial: while an upgrade is in flight a node lists one per serial, highest\n");
-        sbOut.append("first, and any serial other than the one the network reports as current is\n");
-        sbOut.append("marked.\n");
+        sbOut.append("first. A serial below the one the network reports as current is marked\n");
+        sbOut.append("legacy, and one above it successor.\n");
         for (Map<String, Object> mapNetwork : networks(mapDs)) {
             String serialCurrent = val(sub(mapNetwork, "deployment"), "serialId");
             List<Map<String, Object>> lstNode = maps(mapNetwork.get("superValidators"));
@@ -540,6 +555,10 @@ public final class GitPublish {
             sbOut.append(lstNode.size()).append(lstNode.size() == 1 ? " node" : " nodes");
             if (serialCurrent != null) {
                 sbOut.append(", serial ").append(md(serialCurrent));
+            }
+            String textSpread = spread(sub(mapNetwork, "roster"));
+            if (textSpread != null) {
+                sbOut.append(": ").append(md(textSpread));
             }
             sbOut.append(".\n\n");
             if (lstNode.isEmpty()) {
@@ -553,8 +572,9 @@ public final class GitPublish {
                 for (Map<String, Object> mapSeq : maps(mapNode.get("sequencers"))) {
                     String serialOne = val(mapSeq, "serial");
                     String textOne = md(serialOne) + ": " + md(host(val(mapSeq, "url")));
-                    if (serialCurrent != null && !serialCurrent.equals(serialOne)) {
-                        textOne += " *(other serial)*";
+                    String nameRole = role(serialCurrent, serialOne);
+                    if (nameRole != null) {
+                        textOne += " *(" + nameRole + ")*";
                     }
                     lstSeq.add(textOne);
                 }
@@ -565,6 +585,67 @@ public final class GitPublish {
                         .append(" |\n");
             }
         }
+    }
+
+
+    /**
+     * @param nameEnvironment the environment this channel publishes
+     * @return the web page that environment serves
+     */
+    static String webPage(String nameEnvironment) {
+        if ("prd".equals(nameEnvironment))
+            return "https://net.raposza.com/";
+        if ("rc".equals(nameEnvironment) || "stg".equals(nameEnvironment) || "dev".equals(nameEnvironment))
+            return "https://" + nameEnvironment + ".net.raposza.com/";
+        return "http://127.0.0.1:" + Config.httpPort() + "/";
+    }
+
+
+    /**
+     * @param mapRoster the network's roster counts, or null
+     * @return how many nodes report the scheduled version out of all, or null
+     *         where either is unknown
+     */
+    static String onScheduled(Map<String, Object> mapRoster) {
+        String cntNodes = val(mapRoster, "nodes");
+        if (cntNodes == null || "0".equals(cntNodes) || val(mapRoster, "scheduledVersion") == null)
+            return null;
+        return val(mapRoster, "onScheduled") + " / " + cntNodes;
+    }
+
+
+    /**
+     * The versions the nodes report, as counts. Nodes upstream could not read at
+     * this poll are not counted apart: they keep the version last read, and
+     * counting them would commit every failure and its recovery.
+     *
+     * @param mapRoster the network's roster counts, or null
+     * @return for example 12 on 0.9.0, 1 on 0.8.4; null where nothing is counted
+     */
+    static String spread(Map<String, Object> mapRoster) {
+        List<Map<String, Object>> lstVersion = maps(mapRoster == null ? null : mapRoster.get("versions"));
+        List<String> lstPart = new ArrayList<>();
+        for (Map<String, Object> mapOne : lstVersion) {
+            lstPart.add(val(mapOne, "count") + " on " + val(mapOne, "version"));
+        }
+        String cntUnreported = val(mapRoster, "unreported");
+        if (cntUnreported != null && !"0".equals(cntUnreported)) {
+            lstPart.add(cntUnreported + " not reported");
+        }
+        return lstPart.isEmpty() ? null : String.join(", ", lstPart);
+    }
+
+
+    /**
+     * @param serialCurrent the serial the network reports as current, or null
+     * @param serialOne the serial of one sequencer
+     * @return legacy below the current serial, successor above it, null when it
+     *         is the current one or the network reports none
+     */
+    static String role(String serialCurrent, String serialOne) {
+        if (serialCurrent == null || serialOne == null || serialCurrent.equals(serialOne))
+            return null;
+        return Versions.compare(serialOne, serialCurrent) < 0 ? "legacy" : "successor";
     }
 
 
@@ -713,11 +794,11 @@ public final class GitPublish {
             sbOut.append("rehearsed, and its contents are not a statement about any network.\n");
         }
         sbOut.append("\n## Files\n\n");
-        sbOut.append("- `").append(NAME_VERSIONS).append("` - the current state. Fetch this one.\n");
-        sbOut.append("- `").append(NAME_README).append("` - the same data as tables, for a person. It also\n");
-        sbOut.append("  shows each Super Validator node's sequencer hosts, which `").append(NAME_VERSIONS)
-                .append("` does\n");
-        sbOut.append("  not carry. Not a contract: its layout may change without notice.\n");
+        sbOut.append("- `").append(NAME_VERSIONS).append("` - the current state, as the web page and `")
+                .append(NAME_README).append("`\n");
+        sbOut.append("  show it. Fetch this one.\n");
+        sbOut.append("- `").append(NAME_README).append("` - the same data as tables, for a person, with a link\n");
+        sbOut.append("  to the web page. Not a contract: its layout may change without notice.\n");
         sbOut.append("- `").append(NAME_CONTRACT).append("` - this file.\n\n");
         sbOut.append("No history file is kept. The commit log of the data branch is the record of\n");
         sbOut.append("every state `").append(NAME_VERSIONS).append("` has held.\n");
@@ -785,20 +866,23 @@ public final class GitPublish {
         sbOut.append("`timestamp` is the RAPOSZA TIMESTAMP: when the file was emitted by the\n");
         sbOut.append("Raposza service. It is not an upstream time, and it is not when any of the\n");
         sbOut.append("values below it changed.\n\n");
-        sbOut.append("Under `networks`, per network:\n\n");
-        sbOut.append("- `current` - the version the network reports it is RUNNING. It is what the\n");
-        sbOut.append("  synchronizer answers, not what the calendar plans, so it can differ from\n");
-        sbOut.append("  `scheduled` in either direction: a network that moved early carries a\n");
-        sbOut.append("  version no schedule entry has reached yet.\n");
-        sbOut.append("- `sv-version` - the Super Validator application version reported beside it.\n");
-        sbOut.append("  A different thing from the synchronizer version, equal to it most of the\n");
-        sbOut.append("  time, and the difference is the whole story when there is one.\n");
-        sbOut.append("- `minimum` - the minimum version in force, from the operations schedule.\n");
+        sbOut.append("Under `networks`, per network - the same values, under the same names, as\n");
+        sbOut.append("the web page and `").append(NAME_README).append("` show:\n\n");
+        sbOut.append("- `current` - the last CONFIRMED upgrade on the SV Operations Schedule whose\n");
+        sbOut.append("  date has arrived, as `version` and `since`. The schedule states what the\n");
+        sbOut.append("  operators intend, so a date that has arrived is not proof the upgrade ran;\n");
+        sbOut.append("  `svs-on-current` and `reported` are what the network says.\n");
+        sbOut.append("- `svs-on-current` - how many Super Validator nodes report `current` in their\n");
+        sbOut.append("  own roster entry, as `count` `of` all nodes. `count` is `null` where there is\n");
+        sbOut.append("  no `current`.\n");
+        sbOut.append("- `minimum` - the oldest version a validator may run, from the schedule.\n");
         sbOut.append("  Upstream states it in prose and often to a minor version only, so `\"0.7\"`\n");
         sbOut.append("  here means `0.7.x` and no patch digit is invented.\n");
-        sbOut.append("- `scheduled` - the next upgrade still ahead, as `date` and `version`, or\n");
-        sbOut.append("  `null` where none is scheduled. An entry that upstream has cancelled is not\n");
-        sbOut.append("  published here; one it lists as tentative is.\n");
+        sbOut.append("- `next` - the earliest upgrade still ahead, as `version`, `date` and `status`\n");
+        sbOut.append("  (`CONFIRMED` or `TENTATIVE`), all `null` where none is scheduled. An entry\n");
+        sbOut.append("  upstream has cancelled is not published here.\n");
+        sbOut.append("- `reported` - the version the network's own info document states. It can lag\n");
+        sbOut.append("  the network, so it can differ from `current` in either direction.\n");
         sbOut.append("- `serial-id` - upstream increments it by one for each logical synchronizer\n");
         sbOut.append("  upgrade, and states that it carries what the migration id used to: release\n");
         sbOut.append("  names, DNS entries, database names, chain ids and port numbers. If you pin\n");
@@ -806,24 +890,26 @@ public final class GitPublish {
         sbOut.append("- `migration-id` - upstream states this is now FROZEN at its current value and\n");
         sbOut.append("  configured once, and that operators keep the value they have. It is\n");
         sbOut.append("  published because a frozen field that moves would be worth knowing about.\n");
-        sbOut.append("- `chain-id-suffix` - part of the synchronizer identity, as reported.\n");
         sbOut.append("- `successor` and `legacy` - the versions of the synchronizer being upgraded\n");
         sbOut.append("  to and from. Upstream supports the two coexisting during an upgrade rather\n");
         sbOut.append("  than cutting over, so both are `null` while none is in flight, and a\n");
         sbOut.append("  non-null `successor` is the network reporting one that is.\n");
         sbOut.append("- `super-validators` - every Super Validator node of the network with the\n");
-        sbOut.append("  version it reports and the url it answers on. YOU ARE CONNECTED TO A NODE,\n");
-        sbOut.append("  NOT TO A NETWORK: a roster carrying more than one version is normal during\n");
-        sbOut.append("  an upgrade, and `current` alone cannot tell you whether yours has moved.\n");
-        sbOut.append("  The list is empty where no roster is reported, never absent.\n\n");
+        sbOut.append("  version it reports, the scan url it answers on, and its `sequencers`: one\n");
+        sbOut.append("  per synchronizer serial, highest first, each with `serial`, `url` and\n");
+        sbOut.append("  `role` - `legacy` below the network's `serial-id`, `successor` above it,\n");
+        sbOut.append("  `null` on it. YOU ARE CONNECTED TO A NODE, NOT TO A NETWORK: a roster\n");
+        sbOut.append("  carrying more than one version is normal during an upgrade. A node upstream\n");
+        sbOut.append("  could not read at the last poll keeps the version last read. Lists are\n");
+        sbOut.append("  empty where nothing is reported, never absent.\n\n");
         sbOut.append("`splice-latest` is the highest version the Splice tags endpoint carries. It is\n");
-        sbOut.append("different in kind from the three above: it says a release EXISTS, and says\n");
+        sbOut.append("different in kind from everything above: it says a release EXISTS, and says\n");
         sbOut.append("nothing about any network taking it. A tag carries no date, so this value has\n");
         sbOut.append("none.\n\n");
         sbOut.append("Every version is a QUOTED STRING. Unquoted, `0.7` is a number to every yaml\n");
-        sbOut.append("parser there is. `timestamp` and `date` are left unquoted so that they load as\n");
-        sbOut.append("a timestamp and a date, and `migration-id` and `serial-id` are left unquoted\n");
-        sbOut.append("because upstream states them as numbers.\n");
+        sbOut.append("parser there is. `timestamp`, `since` and `date` are left unquoted so that they\n");
+        sbOut.append("load as a timestamp and dates, `status` and `role` as plain words, and\n");
+        sbOut.append("`migration-id`, `serial-id`, `serial` and the counts as whole numbers.\n");
     }
 
 

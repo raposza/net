@@ -1,0 +1,84 @@
+{
+  "comment": [
+    "Price sources. Like the source registry, a source is added by a reviewed",
+    "change to this file, never by discovery, and is pinned by its id.",
+    "kind VOTED is the CC/USD rate a network's Super Validators vote into its open",
+    "mining round, read from the DSO document; it is the rate used on ledger and",
+    "not a market price. kind MARKET is one venue's ticker for one pair, and kind",
+    "AGGREGATE is a price averaged over venues. quote is the currency the price is",
+    "in: USDT and USDC are not USD.",
+    "format names the reader that applies to the body."
+  ],
+  "prices": [
+    {
+      "id": "dso-mainnet",
+      "venue": "MainNet",
+      "network": "MAINNET",
+      "kind": "VOTED",
+      "pair": "CC/USD",
+      "quote": "USD",
+      "format": "dso",
+      "url": "https://docs.global.canton.network.sync.global/dso"
+    },
+    {
+      "id": "dso-testnet",
+      "venue": "TestNet",
+      "network": "TESTNET",
+      "kind": "VOTED",
+      "pair": "CC/USD",
+      "quote": "USD",
+      "format": "dso",
+      "url": "https://docs.test.global.canton.network.sync.global/dso"
+    },
+    {
+      "id": "dso-devnet",
+      "venue": "DevNet",
+      "network": "DEVNET",
+      "kind": "VOTED",
+      "pair": "CC/USD",
+      "quote": "USD",
+      "format": "dso",
+      "url": "https://docs.dev.global.canton.network.sync.global/dso"
+    },
+    {
+      "id": "kraken-cc-usd",
+      "venue": "Kraken",
+      "network": null,
+      "kind": "MARKET",
+      "pair": "CC/USD",
+      "quote": "USD",
+      "format": "kraken",
+      "url": "https://api.kraken.com/0/public/Ticker?pair=CCUSD"
+    },
+    {
+      "id": "okx-cc-usdt",
+      "venue": "OKX",
+      "network": null,
+      "kind": "MARKET",
+      "pair": "CC/USDT",
+      "quote": "USDT",
+      "format": "okx",
+      "url": "https://www.okx.com/api/v5/market/ticker?instId=CC-USDT"
+    },
+    {
+      "id": "bybit-cc-usdt",
+      "venue": "Bybit",
+      "network": null,
+      "kind": "MARKET",
+      "pair": "CC/USDT",
+      "quote": "USDT",
+      "format": "bybit",
+      "url": "https://api.bybit.com/v5/market/tickers?category=spot&symbol=CCUSDT"
+    },
+    {
+      "id": "coingecko-cc-usd",
+      "venue": "CoinGecko",
+      "network": null,
+      "kind": "AGGREGATE",
+      "pair": "CC/USD",
+      "quote": "USD",
+      "format": "coingecko",
+      "url": "https://api.coingecko.com/api/v3/simple/price?ids=canton-network&vs_currencies=usd&include_last_updated_at=true"
+    }
+  ]
+}

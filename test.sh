@@ -56,11 +56,23 @@ chk latest   /api/v1/networks                     '"spliceLatest"'
 chk mainnet  /api/v1/networks/mainnet             'scheduledVersion'
 chk events   /api/v1/events                       '"events"'
 chk sources  /api/v1/sources                      'canton-foundation-cips'
+chk planned  /api/v1/planned                      '"planned"'
+chk changes  /api/v1/changes                      '"changes"'
+chk prices   /api/v1/prices                       '"prices"'
+chk pricesrc /api/v1/prices                       '"dso-mainnet"'
 chk webpage  /index.html                          'Raposza'
 chk svs      /index.html                          'Super Validators'
+chk upcoming /index.html                          'Planned events'
+chk past     /index.html                          'Past events'
 chk openapi  /openapi.json                        '"openapi": "3.1.0"'
 chk apidocs  /api.html                            'swagger-ui'
 chk swagger  /vendor/swagger-ui/swagger-ui-bundle.js 'SwaggerUIBundle'
+chk tokens   /vendor/raposza-design/tokens.css    'rz-accent:'
+chk fonts    /vendor/raposza-design/fonts.css     'InterVariable.woff2'
+chk design   /index.html                          'vendor/raposza-design/tokens.css'
+chk pricepg  /prices.html                         'Canton Coin in US dollars'
+chk pricejs  /prices.js                           '/prices'
+chk pricedsg /prices.html                         'vendor/raposza-design/tokens.css'
 
 # Nothing observes what a network runs, and nothing reports a synchronizer, so
 # neither may reappear in a published network however plausible the field looks.
@@ -79,6 +91,46 @@ if curl -sf "http://127.0.0.1:$port/api/v1/sources" -o "$work/sources.json" \
   echo "ok   sources carry no id the registry does not define"
 else
   echo "FAIL /api/v1/sources names a source that does not exist"
+  fail=1
+fi
+
+# The page's script and style carry the release version in their urls, so a
+# browser holding the previous release's copy fetches the new one instead of
+# running an old script against a new page.
+ver=$(sed -n 's:^  <version>\(.*\)</version>$:\1:p' pom.xml | head -1)
+if [ -n "$ver" ] && grep -q "app.js?v=$ver\"" web/index.html && grep -q "style.css?v=$ver\"" web/index.html; then
+  echo "ok   page assets carry version $ver"
+else
+  echo "FAIL web/index.html does not load app.js and style.css with ?v=$ver"
+  fail=1
+fi
+if [ -n "$ver" ] && grep -q "prices.js?v=$ver\"" web/prices.html && grep -q "style.css?v=$ver\"" web/prices.html; then
+  echo "ok   prices page assets carry version $ver"
+else
+  echo "FAIL web/prices.html does not load prices.js and style.css with ?v=$ver"
+  fail=1
+fi
+
+# Every page carries the visitor counting tag. The deployment serves what it
+# loads, from the page's own origin; the service serves neither path.
+lstNoTag=""
+for page in web/index.html web/prices.html web/api.html; do
+  grep -qF '<script data-goatcounter="/_gc/count" async src="/_gc/count.js"></script>' "$page" || lstNoTag="$lstNoTag $page"
+done
+if [ -z "$lstNoTag" ]; then
+  echo "ok   every page carries the counting tag"
+else
+  echo "FAIL no counting tag in:$lstNoTag"
+  fail=1
+fi
+
+# The status names the release, read from the artifact: a jar built without
+# filtering would say unknown or carry the placeholder itself.
+if curl -sf "http://127.0.0.1:$port/api/v1/status" -o "$work/version.json" \
+    && grep -Eq "\"version\" *: *\"$ver\"" "$work/version.json"; then
+  echo "ok   status names version $ver"
+else
+  echo "FAIL /api/v1/status does not carry version $ver"
   fail=1
 fi
 

@@ -49,10 +49,14 @@ public final class Worker {
         GitPublish pubStart = publisher();
         System.out.println("worker " + Config.environment() + ": git publication "
                 + (pubStart == null ? "off" : "to " + pubStart.spec().urlRemote()));
+        int secPrices = Config.pricePollSeconds();
+        System.out.println("worker " + Config.environment() + ": prices "
+                + (isCollecting && secPrices > 0 ? "every " + secPrices + " s into " + Config.pricesDir() : "off"));
         openIndex();
         while (true) {
             if (isCollecting) {
                 Collect.due();
+                Prices.due(Config.pricesDir(), secPrices);
             }
             publishOnce();
             TimeUnit.SECONDS.sleep(secInterval);
@@ -97,6 +101,7 @@ public final class Worker {
         Instant instNow = Instant.now();
         String idPublication = Dataset.newPublicationId(instNow);
         Map<String, Object> mapDs = Dataset.generate(idPublication, instNow, index());
+        mapDs.put("prices", Prices.publication(Config.pricesDir(), Config.collectEnabled(), Config.pricePollSeconds()));
         try {
             Dataset.write(Config.datasetDir(), mapDs);
         }
@@ -131,9 +136,9 @@ public final class Worker {
 
     /**
      * The index read once, for one publication: the source list with the state
-     * the index holds, and every event it derived. Both come from one connection
-     * so a publication cannot carry a source list from one moment and events
-     * from another.
+     * the index holds, every event it derived, and the change log. All three come
+     * from one connection so a publication cannot carry a source list from one
+     * moment and events from another.
      *
      * @return what the index yielded, or null when it cannot be read, which
      *         publishes the registry alone and says UNAVAILABLE rather than
@@ -141,7 +146,9 @@ public final class Worker {
      */
     private static Dataset.Index index() {
         try (Connection conn = Db.connection()) {
-            return new Dataset.Index(Sources.published(conn, Sources.load()), Events.published(conn));
+            Instant instNow = Instant.now();
+            return new Dataset.Index(Sources.published(conn, Sources.load()), Events.published(conn),
+                    Timeline.changes(conn, instNow), Timeline.unwatched(conn, instNow));
         }
         catch (SQLException | IOException e) {
             System.err.println("index unavailable, publishing the registry alone: " + e);

@@ -4,6 +4,74 @@
 Releases before 0.2.0 carried no version and no tag; their history is the commit
 log.
 
+## 0.9.0
+
+- `GET /api/v1/prices` and `/prices.html`: the latest CC/USD price. VOTED is the
+  `amuletPrice` of each network's open mining round, read from its DSO document;
+  MARKET is the spot ticker of Kraken CC/USD, OKX CC/USDT and Bybit CC/USDT, and
+  AGGREGATE CoinGecko's price over venues. Each carries bid, ask and last as the
+  source gave them, the source's own time and what that time is, when it was read,
+  the endpoint it was read from, and the newest attempt when that failed. The
+  sources are `src/main/resources/prices.json`.
+- A worker that acquires reads every price source at once every
+  `FEED_PRICE_POLL_SECONDS`, default 900, and appends every reading, failed ones
+  included, to `readings.jsonl` under `FEED_PRICES_DIR`, by default `prices`
+  beside the journal root. Back it up with the journal.
+- `GET /api/v1/status` carries `version`, the release the artifact was built as,
+  and both pages show it under the site name as `Raposza Net v. <version>`.
+- BREAKING, the data repository. `versions.yml` carries what the web page and
+  `README.md` show, under the same names. Per network: `current` is now the last
+  confirmed upgrade on the SV Operations Schedule whose date has arrived, with
+  its `version` and `since`; `svs-on-current` counts the Super Validator nodes
+  reporting it, `count` of `of`; `next` is the earliest upgrade still ahead, with
+  `version`, `date` and `status`, and replaces `scheduled`; `reported` is the
+  version the network's own info document states, which is what `current` held
+  until now. `sv-version` and `chain-id-suffix` are gone. Every Super Validator
+  node carries its `sequencers`, one `serial`, `url` and `role` per synchronizer
+  serial, `role` being `legacy` below the network's `serial-id`, `successor`
+  above it and `null` on it. `migration-id`, `serial-id` and the two counts load
+  as numbers. Text a source supplied - a node's name and its urls - is written
+  with every line break and control character escaped.
+- The data repository's `README.md` opens with a link to the web page of its
+  environment, and its networks table carries what is scheduled, how many nodes
+  report it, since when, the minimum, the next upgrade and its date, and what the
+  network reports. Each network's Super Validator heading states how the nodes'
+  versions spread. A data commit is made when what the README shows moves - the
+  source list is there and not in `versions.yml` - as before.
+- `GET /api/v1/planned`: the SV Operations Schedule records from today to 28
+  days ahead, cancelled ones included. `GET /api/v1/changes`: every revision
+  observed in the last 14 days, newest first, each marked when the poll before
+  it lay further back than 15 minutes or twice the source's poll interval,
+  whichever is longer, and the spans in which a source
+  was not polled at all, so a quiet stretch is never read as nothing having
+  happened. A source's first observation is not a change.
+- `GET /api/v1/networks` carries per network the roster counts - nodes, how
+  many report the scheduled version, how many report none, how many upstream
+  could not read, and each version with its count - the source of the scheduled
+  and the minimum version, the title and source of the next upgrade, the source
+  of what the network reports, and the event of the latest Splice release.
+  Sources carry `lastPolledAt` and `lastChangedAt` beside `lastSuccessAt`.
+- A Super Validator node whose version upstream could not read - its roster row
+  reads "Failed to fetch version" - is an observation failure, not a version
+  change. `SvVersionsNormalizer@2` claims `version_status` `UNAVAILABLE` for it,
+  the node keeps the version last read, and events and nodes carry
+  `versionStatus`. The index gains a column, so the first start of this build
+  drops the index and rebuilds it from the evidence store.
+- The web page opens with the latest Splice release and, per network, what is
+  scheduled beside what the network and its nodes report. Planned events for
+  the next four weeks follow, cancelled ones struck through, then the Super
+  Validators, one collapsible table per network, the sources with when each was
+  last polled, last succeeded and last changed, and at the bottom every change of
+  the last two weeks with a network filter. Every value links to the record it
+  was published from, and to the upstream document polled. Each network has a
+  colour of its own, MainNet darkest. The page takes its design tokens and its
+  two typefaces from a vendored copy of `raposza-design` in
+  `web/vendor/raposza-design/`.
+- Every page - the networks page, `/prices.html` and `/api.html` - loads
+  `/_gc/count.js` with `data-goatcounter="/_gc/count"`, for visitor counting.
+  The service serves neither path; a deployment serves both from the page's own
+  origin, and where nothing does the request fails and nothing is sent.
+
 ## 0.8.0
 
 - BREAKING, the data repository. `history.yml` is gone. The commit log of the

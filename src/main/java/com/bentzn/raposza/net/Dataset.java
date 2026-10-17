@@ -41,6 +41,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * UNAVAILABLE  the index could not be read
  * </pre>
  *
+ * Beside them the publication carries the two views of time a reader asks for
+ * after the current state, both from Timeline: the schedule's events of the
+ * coming weeks, and the change log of the weeks behind. And the latest CC/USD
+ * price of every price source, from Prices: the worker puts them in, so a
+ * corpus generated anywhere else carries the price sources with no value.
+ *
  * Author Claude/bentzn
  */
 public final class Dataset {
@@ -64,8 +70,21 @@ public final class Dataset {
      *
      * @param lstSource the source list with the state the index holds
      * @param lstEvent the published events
+     * @param lstChange the change log of the last weeks, newest first
+     * @param lstUnwatched the spans of that window in which nothing was polled
      */
-    public record Index(List<Object> lstSource, List<Object> lstEvent) {
+    public record Index(List<Object> lstSource, List<Object> lstEvent, List<Object> lstChange,
+            List<Object> lstUnwatched) {
+
+        /**
+         * An index read without its change log.
+         *
+         * @param lstSource the source list with the state the index holds
+         * @param lstEvent the published events
+         */
+        public Index(List<Object> lstSource, List<Object> lstEvent) {
+            this(lstSource, lstEvent, List.of(), List.of());
+        }
     }
 
 
@@ -82,7 +101,8 @@ public final class Dataset {
      * @param idPublication identifier stamped into every record
      * @param instNow the moment of publication
      * @param idx what the index yielded, or null when it could not be read
-     * @return the whole corpus: metadata, networks, events, sources
+     * @return the whole corpus: metadata, networks, events, sources, planned,
+     *         changes, and the price sources without a value
      */
     public static Map<String, Object> generate(String idPublication, Instant instNow, Index idx) {
         String stampNow = FMT_ISO.format(instNow);
@@ -96,6 +116,11 @@ public final class Dataset {
         mapDs.put("networks", Networks.derive(lstEvent, instNow, idPublication, stampNow));
         mapDs.put("events", lstEvent);
         mapDs.put("sources", idx == null || idx.lstSource() == null ? registry() : idx.lstSource());
+        mapDs.put("planned", Timeline.planned(lstEvent, instNow));
+        mapDs.put("changes", idx == null || idx.lstChange() == null ? List.of() : idx.lstChange());
+        mapDs.put("changesFrom", iso(Timeline.changesFrom(instNow)));
+        mapDs.put("unwatched", idx == null || idx.lstUnwatched() == null ? List.of() : idx.lstUnwatched());
+        mapDs.put("prices", Prices.registryOnly());
         return mapDs;
     }
 
@@ -138,6 +163,17 @@ public final class Dataset {
                 map("publicationId", idPublication, "events", mapDs.get("events")));
         writeJson(dirTmp.resolve("sources.json"),
                 map("publicationId", idPublication, "sources", mapDs.get("sources")));
+        writeJson(dirTmp.resolve("planned.json"),
+                map("publicationId", idPublication, "planned", list(mapDs.get("planned"))));
+        writeJson(dirTmp.resolve("changes.json"),
+                map("publicationId", idPublication, "from", mapDs.get("changesFrom"),
+                        "unwatched", list(mapDs.get("unwatched")), "changes", list(mapDs.get("changes"))));
+        if (mapDs.get("prices") instanceof Map) {
+            Map<String, Object> mapPrices = new LinkedHashMap<>();
+            mapPrices.put("publicationId", idPublication);
+            mapPrices.putAll(castMap(mapDs.get("prices")));
+            writeJson(dirTmp.resolve("prices.json"), mapPrices);
+        }
 
         if (Files.exists(dirAbs)) {
             Files.move(dirAbs, dirOld, StandardCopyOption.ATOMIC_MOVE);
@@ -148,6 +184,10 @@ public final class Dataset {
 
 
     /**
+     * The planned list, the change log and the prices are read where present and
+     * empty where not, so a dataset written by an earlier build is still served
+     * whole.
+     *
      * @param dirIn the dataset directory
      * @return the corpus, or null when the directory is absent or incomplete
      */
@@ -174,6 +214,16 @@ public final class Dataset {
             mapDs.put("networks", lstNetwork);
             mapDs.put("events", mapEvents.get("events"));
             mapDs.put("sources", mapSources.get("sources"));
+            Map<String, Object> mapPlanned = readJson(dirAbs.resolve("planned.json"));
+            Map<String, Object> mapChanges = readJson(dirAbs.resolve("changes.json"));
+            mapDs.put("planned", mapPlanned == null ? List.of() : list(mapPlanned.get("planned")));
+            mapDs.put("changes", mapChanges == null ? List.of() : list(mapChanges.get("changes")));
+            mapDs.put("changesFrom", mapChanges == null ? null : mapChanges.get("from"));
+            mapDs.put("unwatched", mapChanges == null ? List.of() : list(mapChanges.get("unwatched")));
+            Map<String, Object> mapPrices = readJson(dirAbs.resolve("prices.json"));
+            if (mapPrices != null)
+                mapPrices.remove("publicationId");
+            mapDs.put("prices", mapPrices == null ? Prices.registryOnly() : mapPrices);
             return mapDs;
         }
         catch (IOException e) {
@@ -259,6 +309,16 @@ public final class Dataset {
                 Files.deleteIfExists(fileGone);
             }
         }
+    }
+
+
+    /**
+     * @param objAny a value that should be a list
+     * @return it, or an empty list when it is not one
+     */
+    @SuppressWarnings("unchecked")
+    static List<Object> list(Object objAny) {
+        return objAny instanceof List ? (List<Object>) objAny : List.of();
     }
 
 

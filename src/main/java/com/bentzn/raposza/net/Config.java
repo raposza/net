@@ -4,12 +4,16 @@
  */
 package com.bentzn.raposza.net;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Properties;
 
 /**
  * Configuration, entirely from the environment. Nothing is read from a file and
- * nothing is compiled in, so the same artifact runs in every environment.
+ * nothing is compiled in but the artifact's own version, so the same artifact
+ * runs in every environment.
  *
  * Author Claude/bentzn
  */
@@ -35,6 +39,29 @@ public final class Config {
      */
     public static String httpHost() {
         return env("FEED_HTTP_HOST", "0.0.0.0");
+    }
+
+
+    /**
+     * The release this artifact was built as. The one value here that is
+     * compiled in rather than configured, because it describes the artifact and
+     * not the environment it runs in.
+     *
+     * @return the version, or unknown when the artifact carries none
+     */
+    public static String version() {
+        try (InputStream strmIn = Config.class.getResourceAsStream("/version.properties")) {
+            if (strmIn == null)
+                return "unknown";
+            Properties props = new Properties();
+            props.load(strmIn);
+            String valVersion = props.getProperty("version");
+            return valVersion == null || valVersion.isBlank() || valVersion.startsWith("${") ? "unknown"
+                    : valVersion.trim();
+        }
+        catch (IOException e) {
+            return "unknown";
+        }
     }
 
 
@@ -169,6 +196,33 @@ public final class Config {
     /** @return seconds between publications made by the worker */
     public static int publishIntervalSeconds() {
         return Integer.parseInt(env("FEED_PUBLISH_INTERVAL_SECONDS", "60"));
+    }
+
+
+    /**
+     * Root of the price record: every CC/USD reading, appended. Like the journal
+     * it holds what cannot be fetched again, so it is backed up with it. The
+     * default sits beside the journal root, so an instance that keeps a journal
+     * keeps its prices next to it without being configured.
+     *
+     * @return the directory, default prices beside the journal root
+     */
+    public static Path pricesDir() {
+        String dirSet = optional("FEED_PRICES_DIR");
+        if (dirSet != null)
+            return Paths.get(dirSet);
+        return journalDir().toAbsolutePath().normalize().resolveSibling("prices");
+    }
+
+
+    /**
+     * Seconds between two readings of every price source, by a worker that
+     * acquires. Zero or less reads no price at all.
+     *
+     * @return the interval, default 900
+     */
+    public static int pricePollSeconds() {
+        return Integer.parseInt(env("FEED_PRICE_POLL_SECONDS", "900"));
     }
 
 

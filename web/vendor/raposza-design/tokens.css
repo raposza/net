@@ -1,0 +1,60 @@
+/*
+ * Copyright (c) 2026 bentzn
+ * SPDX-License-Identifier: Apache-2.0
+ * Author Claude/bentzn
+ * Generated 2026-09-24T08:00:00Z
+ *
+ * Raposza design tokens - THE ONE SOURCE. The Java constants in
+ * com.raposza.design.Tokens are READ from this file at class load, not
+ * copied from it, so a value changed here changes both.
+ *
+ * One declaration per line, `--rz-<name>: <value>;`, inside the one :root
+ * block. Colours are #RRGGBB; lengths are px, unscaled - a Swing consumer
+ * scales them, a browser does not need to.
+ */
+:root {
+    /* Colour - one accent for Tech, Net and Business */
+    --rz-accent: #2563EB;
+    --rz-accent-dark: #7AA2F7;
+
+    /* Colour - status */
+    --rz-ok: #16A34A;
+    --rz-ok-dark: #4ADE80;
+    --rz-bad: #DC2626;
+    --rz-busy: #D97706;
+    --rz-stopped: #6B7280;
+    --rz-lamp-off: #C7CBD1;
+
+    /* Colour - neutrals, one set for Swing and the web - his instruction of
+       2026-09-24, "harmonize the background, border and text greys" */
+    --rz-bg: #F5F6F8;
+    --rz-surface: #FFFFFF;
+    --rz-fg: #1F2328;
+    --rz-fg-muted: #57606A;
+    --rz-fg-disabled: #8C959F;
+    --rz-border: #D0D7DE;
+    --rz-code-bg: #F6F8FA;
+
+    /* Type - Inter for applications and web pages, Hack for monospace */
+    --rz-font-sans: "Inter", system-ui, sans-serif;
+    --rz-font-mono: "Hack", ui-monospace, monospace;
+    --rz-font-size: 13px;
+    --rz-font-size-small: 12px;
+    --rz-font-size-large: 15px;
+    --rz-font-size-title: 18px;
+
+    /* Spacing - the rhythm is 8 / 12 / 16 / 22 */
+    --rz-gap-small: 8px;
+    --rz-gap: 12px;
+    --rz-pad-card: 16px;
+    --rz-pad-page: 22px;
+    --rz-row-height: 34px;
+    --rz-row-height-compact: 24px;
+
+    /* Shape */
+    --rz-arc: 10px;
+    --rz-arc-text: 9px;
+    --rz-arc-card: 14px;
+    --rz-arc-check: 5px;
+    --rz-arc-progress: 8px;
+}

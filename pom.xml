@@ -12,7 +12,7 @@
 
   <groupId>com.bentzn.raposza</groupId>
   <artifactId>raposza-network-feed</artifactId>
-  <version>0.8.0</version>
+  <version>0.9.0</version>
   <packaging>jar</packaging>
 
   <name>Raposza Network Operations Feed</name>
@@ -80,6 +80,26 @@
 
   <build>
     <finalName>raposza-network-feed</finalName>
+    <!--
+      version.properties alone is filtered, so the jar knows the version it was
+      built as; every other resource is copied byte for byte.
+    -->
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>false</filtering>
+        <excludes>
+          <exclude>version.properties</exclude>
+        </excludes>
+      </resource>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+        <includes>
+          <include>version.properties</include>
+        </includes>
+      </resource>
+    </resources>
     <!--
       Every plugin the lifecycle loads is pinned here, so the build does not
       take whatever version the installed Maven defaults to.

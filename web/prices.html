@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<!--
+  Copyright 2026 bentzn
+  SPDX-License-Identifier: Apache-2.0
+  Author Claude/bentzn
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Canton Coin in US dollars - Raposza Network Operations Feed</title>
+<link rel="stylesheet" href="vendor/raposza-design/fonts.css">
+<link rel="stylesheet" href="vendor/raposza-design/tokens.css">
+<link rel="stylesheet" href="style.css?v=0.9.0">
+</head>
+<body>
+
+<div id="envbar" class="envbar" hidden></div>
+
+<header>
+  <p class="crumb"><a href="/">Raposza Network Operations Feed</a></p>
+  <p id="version" class="version" hidden></p>
+  <h1>Canton Coin in US dollars</h1>
+  <p class="lead">The latest CC/USD price: the rate each network votes on ledger, and
+  what the trading venues quote. Every value is shown as its source gives it, and
+  Source opens the exact endpoint it was read from.</p>
+  <p id="banner" class="banner" hidden></p>
+</header>
+
+<section>
+  <h2>Voted on the network</h2>
+  <p class="lead">The <code>amuletPrice</code> of each network's open mining round, as
+  its DSO document states it. The Super Validators vote it and the ledger uses it. It
+  is not a market price.</p>
+  <table id="voted">
+    <thead>
+      <tr>
+        <th>Network</th>
+        <th>USD per CC</th>
+        <th>Round</th>
+        <th>Round opens (UTC)</th>
+        <th>Read (UTC)</th>
+        <th>Source</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</section>
+
+<section>
+  <h2>Trading venues</h2>
+  <p class="lead">One spot ticker per venue, and CoinGecko's price over venues. A
+  price is in the currency the pair names: USDT is not USD.</p>
+  <table id="market">
+    <thead>
+      <tr>
+        <th>Venue</th>
+        <th>Pair</th>
+        <th>Bid</th>
+        <th>Ask</th>
+        <th>Last</th>
+        <th>Venue time (UTC)</th>
+        <th>Read (UTC)</th>
+        <th>Source</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</section>
+
+<footer>
+  <p id="status">Loading.</p>
+  <p>The page is a view of the API. It carries no fact the API does not.
+  <a href="/api/v1/prices">/api/v1/prices</a>, described in <a href="/openapi.json">/openapi.json</a>
+  and browsable at <a href="/api.html">/api.html</a></p>
+</footer>
+
+<script src="prices.js?v=0.9.0"></script>
+<script data-goatcounter="/_gc/count" async src="/_gc/count.js"></script>
+</body>
+</html>

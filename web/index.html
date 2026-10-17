@@ -9,7 +9,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Raposza Network Operations Feed</title>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="vendor/raposza-design/fonts.css">
+<link rel="stylesheet" href="vendor/raposza-design/tokens.css">
+<link rel="stylesheet" href="style.css?v=0.9.0">
 </head>
 <body>
 
@@ -17,32 +19,55 @@
 
 <header>
   <h1>Raposza Network Operations Feed</h1>
+  <p id="version" class="version" hidden></p>
   <p class="lead">What is deployed on the Canton Network, what is scheduled, whether it
-  is confirmed, and where every fact came from.</p>
+  is confirmed, and where every fact came from. Every value links to the record it
+  was published from; the arrow beside it opens the upstream document that was polled.</p>
   <p id="banner" class="banner" hidden></p>
 </header>
 
 <section>
-  <h2>Latest Splice release</h2>
-  <p id="latest" class="latest mono">-</p>
+  <h2>Splice</h2>
+  <div class="latestbox">
+    <span class="latestlabel">Latest release</span>
+    <span id="latest" class="latest">-</span>
+  </div>
   <p class="lead">The highest version the Splice tags endpoint carries. A release
-  existing is not a network running it; what each network runs is below.</p>
-</section>
-
-<section>
-  <h2>Networks</h2>
-  <p class="lead">Scheduled, not running. Every value here is what the operators
-  said they intend to do; a date that has arrived is not evidence that it
-  happened, and no source this feed reads reports a running version.</p>
-  <table id="networks">
+  existing is not a network running it; what each network is on is below.</p>
+  <table id="versions">
     <thead>
       <tr>
         <th>Network</th>
-        <th>Scheduled</th>
+        <th>Current (scheduled)</th>
+        <th>SVs on it</th>
         <th>Since</th>
         <th>Minimum</th>
         <th>Next</th>
         <th>Due</th>
+        <th>Reported</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <p class="lead note">Current is the last confirmed upgrade on the SV Operations
+  Schedule whose date has arrived. The schedule states what the operators intend, so
+  a date that has arrived is not proof the upgrade ran. Minimum is the oldest
+  version a validator may run. Next is the earliest upgrade still ahead, confirmed
+  or not. SVs on it counts the Super Validator nodes whose own roster entry reports
+  that version. Reported is the version the network's own info document states.</p>
+</section>
+
+<section>
+  <h2>Planned events &mdash; next 4 weeks</h2>
+  <p id="plannedlead" class="lead">From the SV Operations Schedule.</p>
+  <table id="planned">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Network</th>
+        <th>Event</th>
+        <th>Status</th>
+        <th>Version</th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -54,9 +79,9 @@
   <p class="lead">The hosts each Super Validator node publishes, as the network's
   own DSO document states them. Scan is the node's public read endpoint. A
   participant connects to a sequencer, and the sequencer changes at every
-  synchronizer serial: while an upgrade is in flight a node lists one per
-  serial, highest first, and any serial other than the one the network reports
-  as current is marked.</p>
+  synchronizer serial: while an upgrade is in flight, and for a while after it, a
+  node lists one per serial, highest first. A serial below the one the network
+  reports as current is marked legacy, one above it successor.</p>
   <div id="svs"></div>
 </section>
 
@@ -69,6 +94,37 @@
         <th>Publisher</th>
         <th>Authority</th>
         <th>State</th>
+        <th>Last polled</th>
+        <th>Last success</th>
+        <th>Last changed</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</section>
+
+<section>
+  <h2>Past events &mdash; last 2 weeks</h2>
+  <p id="changeslead" class="lead">Everything that changed, newest first.</p>
+  <p class="filter">
+    <label for="changesnet">Network</label>
+    <select id="changesnet">
+      <option value="">All</option>
+      <option value="MAINNET">MainNet</option>
+      <option value="TESTNET">TestNet</option>
+      <option value="DEVNET">DevNet</option>
+      <option value="-">Not network-specific</option>
+    </select>
+    <span id="changescnt" class="cnt"></span>
+  </p>
+  <table id="changes">
+    <thead>
+      <tr>
+        <th>Observed (UTC)</th>
+        <th>Network</th>
+        <th>Subject</th>
+        <th>Change</th>
+        <th>What moved</th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -82,6 +138,7 @@
   and browsable at <a href="/api.html">/api.html</a></p>
 </footer>
 
-<script src="app.js"></script>
+<script src="app.js?v=0.9.0"></script>
+<script data-goatcounter="/_gc/count" async src="/_gc/count.js"></script>
 </body>
 </html>

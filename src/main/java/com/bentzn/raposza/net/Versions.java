@@ -5,24 +5,27 @@
 package com.bentzn.raposza.net;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
  * `versions.yml`: the published state reduced to the values a consumer acts on,
  * in a form a person also reads without tooling.
  *
- * Per network it carries what the network reports it is RUNNING - `current` and
- * the SV application version beside it - the minimum version in force and the
- * next upgrade still ahead, both from the schedule, the identity of the
- * deployment, and every Super Validator node with the version it reports. The
- * last line is the highest version the Splice tags endpoint carries, which is
- * the only source that says a release exists at all.
+ * IT CARRIES WHAT THE WEB PAGE AND THE README SHOW, UNDER THE SAME NAMES, so a
+ * reader who looked at either finds the same values here. Per network, in the
+ * page's order: `current`, the last confirmed upgrade on the schedule whose date
+ * has arrived, with `since`; `svs-on-current`, how many Super Validator nodes
+ * report that version; `minimum`; `next`, the earliest upgrade still ahead; and
+ * `reported`, what the network's own info document states. Then the identity
+ * of the deployment, and every node with its version, scan url and sequencers,
+ * each sequencer marked legacy or successor against the reported serial as the
+ * page marks it. The last line is the highest version the Splice tags endpoint
+ * carries, which is the only source that says a release exists at all.
  *
- * `current` is an OBSERVATION. It is what the synchronizer answers, not what the
- * calendar plans, and the two disagree whenever a network has moved early or
- * late. The roster is there because an organization is connected to a node
- * rather than to a network, and a roster carrying more than one version is
- * normal during an upgrade.
+ * A node upstream could not read at the last roster carries the version last
+ * read and nothing else: marking it would commit every failed read and its
+ * recovery, and this file commits only when a network moves.
  *
  * EVERY VERSION IS A QUOTED STRING. Unquoted, `0.7` is a number to every yaml
  * parser there is, and `0.7.0` is not the same value as `0.7` once one of them
@@ -58,7 +61,7 @@ public final class Versions {
      * @return the whole text of `versions.yml`, newline terminated
      */
     public static String yaml(Map<String, Object> mapDs) {
-        StringBuilder sbOut = new StringBuilder(4096);
+        StringBuilder sbOut = new StringBuilder(8192);
         sbOut.append(KEY_STAMP).append(' ')
                 .append(String.valueOf(Dataset.meta(mapDs).get("createdAt"))).append('\n');
         sbOut.append("networks:\n");
@@ -67,26 +70,27 @@ public final class Versions {
             Map<String, Object> mapSplice = sub(mapNetwork, "splice");
             Map<String, Object> mapNext = sub(mapNetwork, "next");
             Map<String, Object> mapDeploy = sub(mapNetwork, "deployment");
-            String verNext = field(mapNext, "version");
-            String dayNext = field(mapNext, "from");
+            Map<String, Object> mapRoster = sub(mapNetwork, "roster");
+            String verCurrent = field(mapSplice, "scheduledVersion");
             sbOut.append("  ").append(MAP_KEY.get(nameNetwork)).append(":\n");
-            sbOut.append("    current: ").append(quote(field(mapDeploy, "version"))).append('\n');
-            sbOut.append("    sv-version: ").append(quote(field(mapDeploy, "svVersion"))).append('\n');
+            sbOut.append("    current:\n");
+            sbOut.append("      version: ").append(quote(verCurrent)).append('\n');
+            sbOut.append("      since: ").append(plain(field(mapSplice, "scheduledFrom"))).append('\n');
+            sbOut.append("    svs-on-current:\n");
+            sbOut.append("      count: ").append(number(verCurrent == null ? null : field(mapRoster, "onScheduled")))
+                    .append('\n');
+            sbOut.append("      of: ").append(number(field(mapRoster, "nodes"))).append('\n');
             sbOut.append("    minimum: ").append(quote(field(mapSplice, "minimumVersion"))).append('\n');
-            if (verNext == null && dayNext == null) {
-                sbOut.append("    scheduled: null\n");
-            }
-            else {
-                sbOut.append("    scheduled:\n");
-                sbOut.append("      date: ").append(dayNext == null ? "null" : dayNext).append('\n');
-                sbOut.append("      version: ").append(quote(verNext)).append('\n');
-            }
-            sbOut.append("    migration-id: ").append(plain(field(mapDeploy, "migrationId"))).append('\n');
-            sbOut.append("    serial-id: ").append(plain(field(mapDeploy, "serialId"))).append('\n');
-            sbOut.append("    chain-id-suffix: ").append(quote(field(mapDeploy, "chainIdSuffix"))).append('\n');
+            sbOut.append("    next:\n");
+            sbOut.append("      version: ").append(quote(field(mapNext, "version"))).append('\n');
+            sbOut.append("      date: ").append(plain(field(mapNext, "from"))).append('\n');
+            sbOut.append("      status: ").append(plain(field(mapNext, "status"))).append('\n');
+            sbOut.append("    reported: ").append(quote(field(mapDeploy, "version"))).append('\n');
+            sbOut.append("    migration-id: ").append(number(field(mapDeploy, "migrationId"))).append('\n');
+            sbOut.append("    serial-id: ").append(number(field(mapDeploy, "serialId"))).append('\n');
             sbOut.append("    successor: ").append(quote(field(mapDeploy, "successorVersion"))).append('\n');
             sbOut.append("    legacy: ").append(quote(field(mapDeploy, "legacyVersion"))).append('\n');
-            nodes(sbOut, mapNetwork);
+            nodes(sbOut, mapNetwork, field(mapDeploy, "serialId"));
         }
         sbOut.append("splice-latest: ").append(quote(latest(mapDs))).append('\n');
         return sbOut.toString();
@@ -95,16 +99,19 @@ public final class Versions {
 
     /**
      * The Super Validator roster of one network, in the order the publication
-     * holds it.
+     * holds it, each node with its sequencers, highest serial first.
      *
      * An empty roster is written as an empty sequence rather than omitted: a key
      * that disappears when a network reports no node makes a consumer's lookup
-     * throw on a condition that is not an error.
+     * throw on a condition that is not an error. The same holds for a node's
+     * sequencers.
      *
      * @param sbOut the file being written
      * @param mapNetwork one network record of the publication
+     * @param serialCurrent the serial the network reports, which decides the role
+     *        of each sequencer
      */
-    private static void nodes(StringBuilder sbOut, Map<String, Object> mapNetwork) {
+    private static void nodes(StringBuilder sbOut, Map<String, Object> mapNetwork, String serialCurrent) {
         Object objList = mapNetwork == null ? null : mapNetwork.get("superValidators");
         if (!(objList instanceof List) || ((List<?>) objList).isEmpty()) {
             sbOut.append("    super-validators: []\n");
@@ -118,6 +125,21 @@ public final class Versions {
             sbOut.append("      - name: ").append(quote(field(mapNode, "name"))).append('\n');
             sbOut.append("        version: ").append(quote(field(mapNode, "version"))).append('\n');
             sbOut.append("        scan: ").append(quote(field(mapNode, "scan"))).append('\n');
+            Object objSeq = mapNode.get("sequencers");
+            if (!(objSeq instanceof List) || ((List<?>) objSeq).isEmpty()) {
+                sbOut.append("        sequencers: []\n");
+                continue;
+            }
+            sbOut.append("        sequencers:\n");
+            for (Object objOne : (List<?>) objSeq) {
+                if (!(objOne instanceof Map))
+                    continue;
+                Map<String, Object> mapSeq = cast(objOne);
+                String serialOne = field(mapSeq, "serial");
+                sbOut.append("          - serial: ").append(number(serialOne)).append('\n');
+                sbOut.append("            url: ").append(quote(field(mapSeq, "url"))).append('\n');
+                sbOut.append("            role: ").append(plain(GitPublish.role(serialCurrent, serialOne))).append('\n');
+            }
         }
     }
 
@@ -168,6 +190,18 @@ public final class Versions {
      * @return the version, or null where nothing states one
      */
     public static String latest(Map<String, Object> mapDs) {
+        Map<?, ?> mapBest = latestEvent(mapDs);
+        return mapBest == null ? null : String.valueOf(((Map<?, ?>) mapBest.get("version")).get("value"));
+    }
+
+
+    /**
+     * @param mapDs the corpus
+     * @return the published event of the highest release, or null where nothing
+     *         states one; it carries the provenance of the version latest returns
+     */
+    public static Map<?, ?> latestEvent(Map<String, Object> mapDs) {
+        Map<?, ?> mapBest = null;
         String verBest = null;
         Object objList = mapDs.get("events");
         if (!(objList instanceof List))
@@ -189,9 +223,10 @@ public final class Versions {
             String verOne = String.valueOf(objValue);
             if (verBest == null || compare(verOne, verBest) > 0) {
                 verBest = verOne;
+                mapBest = mapEvent;
             }
         }
-        return verBest;
+        return mapBest;
     }
 
 
@@ -208,10 +243,49 @@ public final class Versions {
     }
 
 
+    /**
+     * @param textValue a value upstream states as a whole number, or null
+     * @return it unquoted, so it loads as a number; anything that is not digits
+     *         is quoted rather than allowed to load as something else
+     */
+    private static String number(String textValue) {
+        if (textValue == null)
+            return "null";
+        return textValue.matches("[0-9]+") ? textValue : quote(textValue);
+    }
+
+
+    /**
+     * A double-quoted scalar. A node's name and its urls are text a third party
+     * wrote, so a line break in one would fold into the value or end the scalar
+     * where the file's indentation no longer allows it, and a control character
+     * is one a yaml loader refuses outright. Every character below space, DEL,
+     * the C1 controls, the two Unicode line and paragraph separators and the two
+     * noncharacters at the top of the basic plane are therefore written as a
+     * four-digit escape, beside the backslash and the quote.
+     *
+     * @param textValue any text, or null
+     * @return it as one quoted scalar on one line, or null unquoted
+     */
     private static String quote(String textValue) {
         if (textValue == null)
             return "null";
-        return "\"" + textValue.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
+        StringBuilder sbOut = new StringBuilder(textValue.length() + 2);
+        sbOut.append('"');
+        for (int posChar = 0; posChar < textValue.length(); posChar++) {
+            char chOne = textValue.charAt(posChar);
+            if (chOne == '\\' || chOne == '"') {
+                sbOut.append('\\').append(chOne);
+            }
+            else if (chOne < 0x20 || (chOne >= 0x7f && chOne < 0xa0) || chOne == 0x2028 || chOne == 0x2029
+                    || chOne == 0xfffe || chOne == 0xffff) {
+                sbOut.append(String.format(Locale.ROOT, "\\u%04x", Integer.valueOf(chOne)));
+            }
+            else {
+                sbOut.append(chOne);
+            }
+        }
+        return sbOut.append('"').toString();
     }
 
 

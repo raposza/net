@@ -80,6 +80,13 @@
                         "0.8.4"
                       ]
                     },
+                    "spliceLatestEventId": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "The published event the latest release was read from; /api/v1/events/{id} carries its provenance"
+                    },
                     "networks": {
                       "type": "array",
                       "items": {
@@ -275,6 +282,183 @@
           }
         }
       }
+    },
+    "/api/v1/planned": {
+      "get": {
+        "operationId": "planned",
+        "summary": "The schedule of the coming weeks",
+        "description": "Every event of the SV Operations Schedule dated from the publication's UTC date up to `days` days ahead, both ends included, by date, then network, then kind, then title. Cancelled events are included and carry their status; withdrawn ones are not. Upstream gives no time zone, so only the date is published.",
+        "responses": {
+          "200": {
+            "description": "The schedule of the coming weeks",
+            "headers": {
+              "X-Raposza-Publication": {
+                "$ref": "#/components/headers/X-Raposza-Publication"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "publicationId",
+                    "days",
+                    "planned"
+                  ],
+                  "properties": {
+                    "publicationId": {
+                      "type": "string",
+                      "description": "Publication the records come from"
+                    },
+                    "days": {
+                      "type": "integer",
+                      "description": "How far ahead the list reaches"
+                    },
+                    "planned": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Planned"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/changes": {
+      "get": {
+        "operationId": "changes",
+        "summary": "Everything that changed in the weeks behind",
+        "description": "Every revision of every event whose causing body was banked in the last `days` days, newest first. The revisions a source made at its first banked observation are not listed: they record that the feed began to look, not that anything happened upstream. observedAt is when the feed banked the body that showed the change, not when the change was made upstream. A revision in which only versionStatus moved is an observation failure or its recovery and is not listed. unwatched names the spans of the window, longer than 15 minutes, in which no source was polled.",
+        "responses": {
+          "200": {
+            "description": "Everything that changed in the weeks behind",
+            "headers": {
+              "X-Raposza-Publication": {
+                "$ref": "#/components/headers/X-Raposza-Publication"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "publicationId",
+                    "days",
+                    "changes"
+                  ],
+                  "properties": {
+                    "publicationId": {
+                      "type": "string",
+                      "description": "Publication the records come from"
+                    },
+                    "days": {
+                      "type": "integer",
+                      "description": "How far back the log reaches"
+                    },
+                    "from": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date-time",
+                      "description": "Where the window starts"
+                    },
+                    "unwatched": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "from": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "to": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      },
+                      "description": "Spans in which nothing was polled, so nothing could be seen"
+                    },
+                    "changes": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Change"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/prices": {
+      "get": {
+        "operationId": "prices",
+        "summary": "The latest CC/USD price of every price source",
+        "description": "Every price source in definition order with its newest successful reading and its newest attempt. VOTED is the amuletPrice of a network's open mining round, read from its DSO document: the rate the Super Validators vote and the ledger uses, not a market price. MARKET is one venue's spot ticker and AGGREGATE a price over venues. A price is in its quote currency; USDT is not USD. Values are decimals as text, exactly as the source gave them. Before any price is read every value is null, and before the first publication exists collecting and pollSeconds are null as well.",
+        "responses": {
+          "200": {
+            "description": "The latest prices",
+            "headers": {
+              "X-Raposza-Publication": {
+                "$ref": "#/components/headers/X-Raposza-Publication"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "publicationId",
+                    "prices"
+                  ],
+                  "properties": {
+                    "publicationId": {
+                      "type": "string",
+                      "description": "Publication the records come from"
+                    },
+                    "pollSeconds": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "description": "Seconds between two reads of every source"
+                    },
+                    "collecting": {
+                      "type": [
+                        "boolean",
+                        "null"
+                      ],
+                      "description": "Whether this environment reads prices at all"
+                    },
+                    "polledAt": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "When the last read of every source ran",
+                      "format": "date-time"
+                    },
+                    "prices": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Price"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -324,6 +508,13 @@
               "stg",
               "dev",
               "local"
+            ]
+          },
+          "version": {
+            "type": "string",
+            "description": "Release of Raposza Net serving the request; unknown when the artifact carries none",
+            "examples": [
+              "0.9.0"
             ]
           },
           "buildId": {
@@ -413,6 +604,13 @@
                   "null"
                 ]
               },
+              "scheduledSourceId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The source the scheduled version was read from; its url is in /api/v1/sources"
+              },
               "minimumVersion": {
                 "type": [
                   "string",
@@ -439,6 +637,13 @@
                   "string",
                   "null"
                 ]
+              },
+              "minimumSourceId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The source the minimum version was read from"
               }
             }
           },
@@ -475,6 +680,20 @@
                 ],
                 "description": "ISO date",
                 "format": "date"
+              },
+              "title": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The upstream title of the upgrade"
+              },
+              "sourceId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The source the next upgrade was read from"
               }
             }
           },
@@ -535,6 +754,55 @@
                   "string",
                   "null"
                 ]
+              },
+              "sourceId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The source the deployment was read from"
+              }
+            }
+          },
+          "roster": {
+            "type": "object",
+            "description": "How far the Super Validator roster agrees with the scheduled version. Agreement between two published sources is not proof of what runs.",
+            "properties": {
+              "nodes": {
+                "type": "integer"
+              },
+              "scheduledVersion": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "onScheduled": {
+                "type": "integer",
+                "description": "Nodes whose roster entry reports the scheduled version"
+              },
+              "unreported": {
+                "type": "integer",
+                "description": "Nodes with no version at all"
+              },
+              "unavailable": {
+                "type": "integer",
+                "description": "Nodes upstream could not read at the last banked roster"
+              },
+              "versions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "version": {
+                      "type": "string"
+                    },
+                    "count": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                "description": "By count, then version, highest first"
               }
             }
           },
@@ -589,6 +857,13 @@
                     "string",
                     "null"
                   ]
+                },
+                "versionStatus": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "UNAVAILABLE when upstream could not read this node's version at the last banked roster; version is then the last one read. Null when it was read"
                 }
               }
             }
@@ -851,6 +1126,13 @@
                 }
               }
             }
+          },
+          "versionStatus": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "For a Super Validator node: UNAVAILABLE when upstream could not read its version; the version is then the last one read"
           }
         }
       },
@@ -900,6 +1182,373 @@
               "null"
             ],
             "format": "date-time"
+          },
+          "lastPolledAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "The last poll of this source, whatever its outcome"
+          },
+          "lastChangedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "The last poll that banked a new body"
+          }
+        }
+      },
+      "Planned": {
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "description": "The published event; /api/v1/events/{id} carries its provenance"
+          },
+          "network": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "examples": [
+              "MAINNET",
+              "TESTNET",
+              "DEVNET"
+            ]
+          },
+          "kind": {
+            "type": "string",
+            "examples": [
+              "NETWORK_UPGRADE",
+              "TOPOLOGY_FREEZE",
+              "PROTOCOL_UPGRADE",
+              "MINIMUM_SPLICE_VERSION"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "examples": [
+              "CONFIRMED",
+              "TENTATIVE",
+              "CANCELLED"
+            ]
+          },
+          "from": {
+            "type": "string",
+            "format": "date",
+            "description": "ISO date, no time zone upstream"
+          },
+          "to": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "ISO date, when upstream gives an end that differs from the start"
+          },
+          "version": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "examples": [
+              "0.9.2",
+              "0.9"
+            ]
+          },
+          "versionPrecision": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "examples": [
+              "PATCH",
+              "MINOR"
+            ]
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The upstream title"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The upstream description, unparsed"
+          },
+          "sourceId": {
+            "type": "string",
+            "description": "The source it was read from; its url is in /api/v1/sources"
+          },
+          "observationId": {
+            "type": "string",
+            "description": "The banked body it was last read from"
+          },
+          "lastBankedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "When that body was banked",
+            "format": "date-time"
+          }
+        }
+      },
+      "Change": {
+        "type": "object",
+        "properties": {
+          "observedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the feed banked the body that showed the change"
+          },
+          "eventId": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "integer",
+            "description": "The revision of the event this change made"
+          },
+          "network": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "examples": [
+              "MAINNET",
+              "TESTNET",
+              "DEVNET"
+            ]
+          },
+          "kind": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string",
+            "description": "The upstream reference of the record: a schedule id, a Super Validator name, a release tag"
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The record's title as it stands now, where it has one"
+          },
+          "types": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "EVENT_CREATED",
+                "EVENT_CONFIRMED",
+                "EVENT_CANCELLED",
+                "EVENT_RESCHEDULED",
+                "EVENT_VERSION_ATTACHED",
+                "EVENT_WITHDRAWN",
+                "EVENT_CORRECTED"
+              ]
+            }
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string"
+                },
+                "old": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "new": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          },
+          "sourceId": {
+            "type": "string",
+            "description": "The source whose body made the change"
+          },
+          "observationId": {
+            "type": "string",
+            "description": "That body"
+          },
+          "afterGap": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Set when the change's source had not been polled for longer than twice its interval, and never less than 15 minutes, before the poll that showed it: the change was first seen at `to` and happened somewhere after `from`. from is null when the source had never been polled before",
+            "properties": {
+              "from": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "to": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        }
+      },
+      "Price": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "examples": [
+              "dso-mainnet",
+              "kraken-cc-usd"
+            ]
+          },
+          "venue": {
+            "type": "string",
+            "description": "The network or the venue that states the price",
+            "examples": [
+              "MainNet",
+              "Kraken"
+            ]
+          },
+          "network": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The network of a voted rate; null for a venue",
+            "examples": [
+              "MAINNET",
+              "TESTNET",
+              "DEVNET"
+            ]
+          },
+          "kind": {
+            "type": "string",
+            "examples": [
+              "VOTED",
+              "MARKET",
+              "AGGREGATE"
+            ]
+          },
+          "pair": {
+            "type": "string",
+            "examples": [
+              "CC/USD",
+              "CC/USDT"
+            ]
+          },
+          "quote": {
+            "type": "string",
+            "description": "The currency the price is in",
+            "examples": [
+              "USD",
+              "USDT"
+            ]
+          },
+          "url": {
+            "type": "string",
+            "description": "The exact endpoint that is read"
+          },
+          "bid": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Best bid, a decimal as text; null for a voted rate and an aggregate"
+          },
+          "ask": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Best ask, a decimal as text; null for a voted rate and an aggregate"
+          },
+          "last": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The last price, or the voted rate, a decimal as text"
+          },
+          "sourceTime": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The source's own time; what it is, sourceTimeIs says",
+            "format": "date-time"
+          },
+          "sourceTimeIs": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "ROUND_OPENS when the round opens, TICKER the venue's ticker, RESPONSE the venue's response rather than a trade, UPDATED the aggregator's last update; null where the source carries no time",
+            "examples": [
+              "ROUND_OPENS",
+              "TICKER",
+              "RESPONSE",
+              "UPDATED"
+            ]
+          },
+          "round": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The mining round of a voted rate"
+          },
+          "readAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "When the values were read",
+            "format": "date-time"
+          },
+          "lastAttemptAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The newest read of this source, whatever its outcome",
+            "format": "date-time"
+          },
+          "lastAttemptStatus": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Its outcome. When it is not OK the values are from readAt",
+            "examples": [
+              "OK",
+              "HTTP_ERROR",
+              "TRANSPORT_ERROR",
+              "UNPARSED"
+            ]
+          },
+          "lastAttemptDetail": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why it failed"
           }
         }
       }

@@ -119,6 +119,10 @@ public final class Sources {
                 }
             }
         }
+        Map<String, OffsetDateTime> mapPolled = latest(conn, "select source_id, max(attempted_at) from poll_attempt"
+                + " group by source_id");
+        Map<String, OffsetDateTime> mapChanged = latest(conn, "select source_id, max(attempted_at) from poll_attempt"
+                + " where outcome = 'CHANGED' group by source_id");
         List<Object> lstOut = new ArrayList<>();
         for (SourceDef def : lstDef) {
             Object[] arrLive = mapLive.get(def.id());
@@ -131,9 +135,33 @@ public final class Sources {
                     "pollSeconds", Integer.valueOf(def.pollSeconds()),
                     "enabled", Boolean.valueOf(def.enabled()),
                     "state", arrLive == null ? "UNKNOWN" : arrLive[0],
-                    "lastSuccessAt", stampLast == null ? null : Dataset.iso(stampLast.toInstant())));
+                    "lastSuccessAt", stampLast == null ? null : Dataset.iso(stampLast.toInstant()),
+                    "lastPolledAt", iso(mapPolled.get(def.id())),
+                    "lastChangedAt", iso(mapChanged.get(def.id()))));
         }
         return lstOut;
+    }
+
+
+    /**
+     * @param conn an open connection
+     * @param sqlRead a query yielding a source id and a timestamp
+     * @return the timestamp per source
+     * @throws SQLException when the read fails
+     */
+    private static Map<String, OffsetDateTime> latest(Connection conn, String sqlRead) throws SQLException {
+        Map<String, OffsetDateTime> mapOut = new LinkedHashMap<>();
+        try (PreparedStatement stmt = conn.prepareStatement(sqlRead); ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                mapOut.put(rs.getString(1), rs.getObject(2, OffsetDateTime.class));
+            }
+        }
+        return mapOut;
+    }
+
+
+    private static String iso(OffsetDateTime stampAny) {
+        return stampAny == null ? null : Dataset.iso(stampAny.toInstant());
     }
 
 

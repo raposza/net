@@ -1,0 +1,5 @@
+raposza-design 0.4.0
+https://repo.maven.apache.org/maven2/com/raposza/design/raposza-design/0.4.0/raposza-design-0.4.0.jar
+sha512 cba412d7e3242dc077f199d60e75d1d42461ace1147fb417565f688e16e1011d2a35e294e87a8a9ab6125c7c80e479f4fe66b6c71b4115ae48f3247df41d06fb
+every file equal to github.com/raposza/design@d65a5541f692be8672d99e6467a21db4876bbd13
+fonts.css: url("fonts/ rewritten to url(", the fonts sit beside it; upstream sha256 330178cf13225331a179ae28f6fbbf81a73503443606c3d5238ee094e306974c

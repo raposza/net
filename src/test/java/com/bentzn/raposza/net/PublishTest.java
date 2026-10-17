@@ -143,20 +143,26 @@ class PublishTest {
         String textYaml = Versions.yaml(withReleases());
         assertTrue(textYaml.startsWith("timestamp: 2026-09-18T00:00:00Z\nnetworks:\n"), textYaml);
         assertTrue(textYaml.contains("  mainnet:\n"
-                + "    current: \"0.7.5\"\n"
-                + "    sv-version: \"0.7.5\"\n"
+                + "    current:\n"
+                + "      version: \"0.7.5\"\n"
+                + "      since: 2026-09-14\n"
+                + "    svs-on-current:\n"
+                + "      count: 13\n"
+                + "      of: 13\n"
                 + "    minimum: \"0.7\"\n"
-                + "    scheduled:\n"
-                + "      date: 2026-09-21\n"
+                + "    next:\n"
                 + "      version: \"0.8.0\"\n"
+                + "      date: 2026-09-21\n"
+                + "      status: CONFIRMED\n"
+                + "    reported: \"0.7.5\"\n"
                 + "    migration-id: 4\n"
                 + "    serial-id: 5\n"
-                + "    chain-id-suffix: \"2\"\n"
                 + "    successor: null\n"
                 + "    legacy: null\n"), textYaml);
         assertTrue(textYaml.contains("      - name: \"Global-Synchronizer-Foundation\"\n"
                 + "        version: \"0.7.5\"\n"
-                + "        scan: \"https://scan.sv-1.global.canton.network.sync.global\"\n"), textYaml);
+                + "        scan: \"https://scan.sv-1.global.canton.network.sync.global\"\n"
+                + "        sequencers: []\n"), textYaml);
         assertTrue(textYaml.endsWith("splice-latest: \"0.8.3\"\n"), textYaml);
         assertTrue(textYaml.indexOf("  mainnet:") < textYaml.indexOf("  testnet:")
                 && textYaml.indexOf("  testnet:") < textYaml.indexOf("  devnet:"),
@@ -165,19 +171,23 @@ class PublishTest {
 
 
     /**
-     * The reason `current` stopped being read off the schedule. On the banked
-     * bodies DevNet reports 0.8.3 while the schedule's latest arrived upgrade is
-     * 0.8.1, so the published value and the planned one differ and the published
-     * one is the observation.
+     * `current` is the page's Current (scheduled) and `reported` is the page's
+     * Reported, and the two are kept apart. On the banked bodies DevNet reports
+     * 0.8.3 while the schedule's latest arrived upgrade is 0.8.1, and its roster
+     * is split 8 on 0.8.1 and 6 on 0.8.3, so all three values differ and each
+     * must land under its own name.
      */
     @Test
-    void currentIsWhatTheNetworkReportsAndNotWhatTheCalendarPlanned() throws Exception {
+    void currentIsTheScheduleAndReportedIsWhatTheNetworkSays() throws Exception {
         Map<String, Object> mapDs = withReleases();
         Map<String, Object> mapDevnet = network(mapDs, "DEVNET");
         assertEquals("0.8.3", cast(mapDevnet.get("deployment")).get("version"));
         assertEquals("0.8.1", cast(mapDevnet.get("splice")).get("scheduledVersion"));
-        assertTrue(Versions.yaml(mapDs).contains("  devnet:\n    current: \"0.8.3\"\n"),
-                Versions.yaml(mapDs));
+        String textYaml = Versions.yaml(mapDs);
+        assertTrue(textYaml.contains("  devnet:\n    current:\n      version: \"0.8.1\"\n"), textYaml);
+        assertTrue(textYaml.contains("    svs-on-current:\n      count: 8\n      of: 14\n"), textYaml);
+        int posDevnet = textYaml.indexOf("  devnet:");
+        assertTrue(textYaml.indexOf("    reported: \"0.8.3\"\n", posDevnet) > posDevnet, textYaml);
     }
 
 
@@ -205,6 +215,27 @@ class PublishTest {
             assertNotNull(cast(objNode).get("scan"), "a node is published with the url it answers on");
         }
         assertEquals(java.util.Set.of("0.8.1", "0.8.3"), setVersion);
+    }
+
+
+    /**
+     * A node's name and its urls are text a third party wrote. Quoted and
+     * escaped, a line break or a control character in one can neither add a key
+     * nor make the file one a loader refuses.
+     */
+    @Test
+    void textASourceWroteCannotBreakTheVersionsFile() throws Exception {
+        Map<String, Object> mapDs = withReleases();
+        String textClean = Versions.yaml(mapDs);
+        Map<String, Object> mapNode = cast(((List<?>) network(mapDs, "DEVNET").get("superValidators")).get(0));
+        mapNode.put("name", "sv\"\nkey: 1\u0007");
+        mapNode.put("scan", "https://scan.example/\r\n- injected ");
+        String textYaml = Versions.yaml(mapDs);
+        assertEquals(textClean.split("\n", -1).length, textYaml.split("\n", -1).length,
+                "no line is added: " + textYaml);
+        assertTrue(textYaml.contains("      - name: \"sv\\\"\\u000akey: 1\\u0007\"\n"), textYaml);
+        assertTrue(textYaml.contains("        scan: \"https://scan.example/\\u000d\\u000a- injected\\u2028\"\n"),
+                textYaml);
     }
 
 

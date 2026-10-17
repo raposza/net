@@ -6,6 +6,7 @@ package com.bentzn.raposza.net;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -56,6 +57,9 @@ public final class ApiServer {
             cfgApp.routes.get("/api/v1/events", ApiServer::events);
             cfgApp.routes.get("/api/v1/events/{id}", ApiServer::event);
             cfgApp.routes.get("/api/v1/sources", ApiServer::sources);
+            cfgApp.routes.get("/api/v1/planned", ApiServer::planned);
+            cfgApp.routes.get("/api/v1/changes", ApiServer::changes);
+            cfgApp.routes.get("/api/v1/prices", ApiServer::prices);
         }).start(nameHost, portHttp);
     }
 
@@ -72,6 +76,7 @@ public final class ApiServer {
         ctx.json(Dataset.map(
                 "service", "raposza-network-feed",
                 "environment", Config.environment(),
+                "version", Config.version(),
                 "buildId", Config.buildId(),
                 "content", mapMeta.get("content"),
                 "publicationId", mapMeta.get("publicationId"),
@@ -89,8 +94,10 @@ public final class ApiServer {
      */
     private static void networks(Context ctx) {
         Map<String, Object> mapDs = current();
+        Map<?, ?> mapLatest = Versions.latestEvent(mapDs);
         ctx.json(Dataset.map("publicationId", publicationId(mapDs),
                 "spliceLatest", Versions.latest(mapDs),
+                "spliceLatestEventId", mapLatest == null ? null : mapLatest.get("id"),
                 "networks", mapDs.get("networks")));
     }
 
@@ -125,6 +132,41 @@ public final class ApiServer {
     private static void sources(Context ctx) {
         Map<String, Object> mapDs = current();
         ctx.json(Dataset.map("publicationId", publicationId(mapDs), "sources", mapDs.get("sources")));
+    }
+
+
+    /** The schedule's events of the coming weeks, cancelled ones included. */
+    private static void planned(Context ctx) {
+        Map<String, Object> mapDs = current();
+        ctx.json(Dataset.map("publicationId", publicationId(mapDs),
+                "days", Integer.valueOf(Timeline.DAYS_PLANNED),
+                "planned", Dataset.list(mapDs.get("planned"))));
+    }
+
+
+    /** Every revision of the weeks behind, newest first. */
+    private static void changes(Context ctx) {
+        Map<String, Object> mapDs = current();
+        ctx.json(Dataset.map("publicationId", publicationId(mapDs),
+                "days", Integer.valueOf(Timeline.DAYS_PAST),
+                "from", mapDs.get("changesFrom"),
+                "unwatched", Dataset.list(mapDs.get("unwatched")),
+                "changes", Dataset.list(mapDs.get("changes"))));
+    }
+
+
+    /** The latest CC/USD price of every price source, voted and quoted. */
+    private static void prices(Context ctx) {
+        Map<String, Object> mapDs = current();
+        Map<String, Object> mapOut = new LinkedHashMap<>();
+        mapOut.put("publicationId", publicationId(mapDs));
+        Object objPrices = mapDs.get("prices");
+        if (objPrices instanceof Map) {
+            for (Map.Entry<?, ?> entry : ((Map<?, ?>) objPrices).entrySet()) {
+                mapOut.put(String.valueOf(entry.getKey()), entry.getValue());
+            }
+        }
+        ctx.json(mapOut);
     }
 
 

@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * The per-network summary, derived from the published events and from nothing
@@ -86,6 +87,7 @@ public final class Networks {
             Map<String, Object> mapScheduled = scheduled(lstMine, dayToday);
             Map<String, Object> mapMinimum = minimum(lstMine, dayToday);
             Map<String, Object> mapNext = next(lstMine, dayToday);
+            List<Object> lstNode = nodes(lstMine);
             lstOut.add(Dataset.map(
                     "network", nameNetwork,
                     "splice", Dataset.map(
@@ -93,17 +95,22 @@ public final class Networks {
                             "scheduledPrecision", version(mapScheduled, "precision"),
                             "scheduledFrom", effective(mapScheduled),
                             "scheduledEventId", id(mapScheduled),
+                            "scheduledSourceId", source(mapScheduled),
                             "minimumVersion", version(mapMinimum, "value"),
                             "minimumPrecision", version(mapMinimum, "precision"),
                             "minimumFrom", effective(mapMinimum),
-                            "minimumEventId", id(mapMinimum)),
+                            "minimumEventId", id(mapMinimum),
+                            "minimumSourceId", source(mapMinimum)),
                     "next", Dataset.map(
                             "eventId", id(mapNext),
                             "version", version(mapNext, "value"),
                             "status", text(mapNext, "status"),
-                            "from", effective(mapNext)),
+                            "from", effective(mapNext),
+                            "title", text(mapNext, "title"),
+                            "sourceId", source(mapNext)),
                     "deployment", deployment(lstMine),
-                    "superValidators", nodes(lstMine),
+                    "roster", roster(lstNode, version(mapScheduled, "value")),
+                    "superValidators", lstNode,
                     "publicationId", idPublication,
                     "updatedAt", stampNow));
         }
@@ -141,7 +148,8 @@ public final class Networks {
                 "chainIdSuffix", text(mapDeploy, "chainIdSuffix"),
                 "successorVersion", text(mapDeploy, "successorVersion"),
                 "legacyVersion", text(mapDeploy, "legacyVersion"),
-                "eventId", id(mapFound));
+                "eventId", id(mapFound),
+                "sourceId", source(mapFound));
     }
 
 
@@ -177,9 +185,60 @@ public final class Networks {
                     "version", version(mapEvent, "value"),
                     "scan", text(mapEvent, "scan_url"),
                     "sequencers", mapEvent.get("sequencers"),
+                    "versionStatus", text(mapEvent, "versionStatus"),
                     "eventId", id(mapEvent)));
         }
         return lstOut;
+    }
+
+
+    /**
+     * How far the roster agrees with the schedule: how many nodes report each
+     * version, how many report the scheduled one, and how many could not be read
+     * this time. Agreement between two published sources is not proof of what
+     * runs, but a roster that is all on one version is a statement by every node,
+     * where the network's own info document speaks for one.
+     *
+     * @param lstNode the nodes, as nodes() publishes them
+     * @param verScheduled the scheduled version, or null
+     * @return the counts; versions ordered by count, then version, highest first
+     */
+    static Map<String, Object> roster(List<Object> lstNode, String verScheduled) {
+        Map<String, Integer> mapCount = new TreeMap<>();
+        int cntMatching = 0;
+        int cntUnreported = 0;
+        int cntUnavailable = 0;
+        for (Object objNode : lstNode) {
+            Map<String, Object> mapNode = cast(objNode);
+            String verNode = text(mapNode, "version");
+            if (text(mapNode, "versionStatus") != null) {
+                cntUnavailable++;
+            }
+            if (verNode == null) {
+                cntUnreported++;
+                continue;
+            }
+            mapCount.merge(verNode, Integer.valueOf(1), Integer::sum);
+            if (verNode.equals(verScheduled)) {
+                cntMatching++;
+            }
+        }
+        List<Map.Entry<String, Integer>> lstEntry = new ArrayList<>(mapCount.entrySet());
+        lstEntry.sort((entLeft, entRight) -> {
+            int nCmp = entRight.getValue().compareTo(entLeft.getValue());
+            return nCmp != 0 ? nCmp : Versions.compare(entRight.getKey(), entLeft.getKey());
+        });
+        List<Object> lstVersion = new ArrayList<>();
+        for (Map.Entry<String, Integer> entOne : lstEntry) {
+            lstVersion.add(Dataset.map("version", entOne.getKey(), "count", entOne.getValue()));
+        }
+        return Dataset.map(
+                "nodes", Integer.valueOf(lstNode.size()),
+                "scheduledVersion", verScheduled,
+                "onScheduled", Integer.valueOf(cntMatching),
+                "unreported", Integer.valueOf(cntUnreported),
+                "unavailable", Integer.valueOf(cntUnavailable),
+                "versions", lstVersion);
     }
 
 
@@ -278,6 +337,22 @@ public final class Networks {
 
     private static String id(Map<String, Object> mapEvent) {
         return text(mapEvent, "id");
+    }
+
+
+    /**
+     * @param mapEvent a published event, or null
+     * @return the source of its first provenance record, which is the source
+     *         whose values stand when several described it; null when none
+     */
+    private static String source(Map<String, Object> mapEvent) {
+        if (mapEvent == null)
+            return null;
+        Object objList = mapEvent.get("provenance");
+        if (!(objList instanceof List) || ((List<?>) objList).isEmpty())
+            return null;
+        Object objFirst = ((List<?>) objList).get(0);
+        return objFirst instanceof Map ? text(cast(objFirst), "sourceId") : null;
     }
 
 
