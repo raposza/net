@@ -4,6 +4,17 @@
 Releases before 0.2.0 carried no version and no tag; their history is the commit
 log.
 
+## 0.10.0
+
+- A new source, `cf-docs-splice-release-notes`: the release notes of Splice and
+  Canton as the Canton Network documentation publishes them, the
+  `docs-main/global-synchronizer/release-notes` directory of
+  `canton-network/cf-docs`, collected by git every 900 s. Collected only;
+  nothing published reads it yet.
+- The git transport, given a `pathPrefix`, banks only the commits that change
+  something under it, not every commit of the repository. No source used a
+  prefix before this one.
+
 ## 0.9.0
 
 - `GET /api/v1/prices` and `/prices.html`: the latest CC/USD price. VOTED is the

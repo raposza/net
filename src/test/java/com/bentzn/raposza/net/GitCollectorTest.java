@@ -97,6 +97,43 @@ class GitCollectorTest {
 
 
     @Test
+    void banksOnlyTheCommitsThatChangeThePrefix() throws Exception {
+        Assumptions.assumeTrue(hasGit(), "git is not on the path");
+        Path dirUp = dirTmp.resolve("up");
+        Files.createDirectories(dirUp);
+        git(dirUp, "init", "-q", "-b", "main", ".");
+        git(dirUp, "config", "user.email", "test@example.invalid");
+        git(dirUp, "config", "user.name", "test");
+        write(dirUp.resolve("notes/splice.mdx"), "## 0.9.0\n");
+        commit(dirUp, "notes one");
+        write(dirUp.resolve("other/page.mdx"), "elsewhere\n");
+        commit(dirUp, "elsewhere");
+        write(dirUp.resolve("notes/splice.mdx"), "## 0.9.1\n## 0.9.0\n");
+        commit(dirUp, "notes two");
+
+        SourceDef def = def(dirUp, "notes");
+        Path dirMirror = dirTmp.resolve("git");
+        Path dirEvidence = dirTmp.resolve("evidence");
+        Poll resFirst = GitCollector.collect(def, dirMirror, dirEvidence, null);
+        assertEquals("CHANGED", resFirst.outcome(), resFirst.detail());
+        assertEquals(2, resFirst.lstBanked().size(), "the commit outside the prefix is not an observation");
+        assertNotEquals(resFirst.lstBanked().get(0).shaContent(), resFirst.lstBanked().get(1).shaContent());
+
+        write(dirUp.resolve("other/page.mdx"), "elsewhere again\n");
+        commit(dirUp, "elsewhere again");
+        Poll resQuiet = GitCollector.collect(def, dirMirror, dirEvidence, resFirst.lstBanked().get(1).revision());
+        assertEquals("UNCHANGED", resQuiet.outcome(), resQuiet.detail());
+        assertTrue(resQuiet.lstBanked().isEmpty());
+
+        write(dirUp.resolve("notes/splice.mdx"), "## 0.9.2\n## 0.9.1\n## 0.9.0\n");
+        commit(dirUp, "notes three");
+        Poll resNext = GitCollector.collect(def, dirMirror, dirEvidence, resFirst.lstBanked().get(1).revision());
+        assertEquals("CHANGED", resNext.outcome(), resNext.detail());
+        assertEquals(1, resNext.lstBanked().size());
+    }
+
+
+    @Test
     void reportsAnUnreachableRemoteRatherThanThrowing() {
         Assumptions.assumeTrue(hasGit(), "git is not on the path");
         SourceDef def = new SourceDef("nowhere", "test", "git",

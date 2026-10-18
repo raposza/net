@@ -29,6 +29,10 @@ import java.util.concurrent.TimeUnit;
  * the state the branch was actually in, not the states of the branch merged
  * into it.
  *
+ * With a path prefix, only the commits on that line that change something
+ * under the prefix are observations. Any other commit would bank a manifest
+ * identical to the one before it - an observation that records nothing.
+ *
  * The retrieved representation of a commit is a MANIFEST: the sorted list of
  * tracked paths with the sha256 of each file. The manifest is canonical, so two
  * commits with an identical tree produce identical bytes and the evidence store
@@ -76,7 +80,7 @@ public final class GitCollector {
         try {
             Path dirRepo = mirror(def, dirMirror);
             String revHead = text(must(dirRepo, "git", "rev-parse", def.ref())).trim();
-            List<String> lstRev = pending(dirRepo, revLastSeen, revHead);
+            List<String> lstRev = pending(dirRepo, revLastSeen, revHead, def.pathPrefix());
             if (lstRev.isEmpty())
                 return Poll.of("UNCHANGED", "head " + shortRev(revHead), millis(msStart), revHead);
             List<Banked> lstOut = new ArrayList<>();
@@ -108,15 +112,18 @@ public final class GitCollector {
     }
 
 
-    private static List<String> pending(Path dirRepo, String revLastSeen, String revHead)
+    private static List<String> pending(Path dirRepo, String revLastSeen, String revHead, String pathPrefix)
             throws IOException, InterruptedException {
         boolean hasBase = revLastSeen != null && !revLastSeen.isBlank()
                 && exec(dirRepo, "git", "cat-file", "-e", revLastSeen + "^{commit}").code() == 0;
-        String[] argsRev = hasBase
-                ? new String[] { "git", "rev-list", "--reverse", "--first-parent", revLastSeen + ".." + revHead }
-                : new String[] { "git", "rev-list", "--reverse", "--first-parent", revHead };
+        List<String> lstArg = new ArrayList<>(List.of("git", "rev-list", "--reverse", "--first-parent",
+                hasBase ? revLastSeen + ".." + revHead : revHead));
+        if (pathPrefix != null && !pathPrefix.isBlank()) {
+            lstArg.add("--");
+            lstArg.add(pathPrefix);
+        }
         List<String> lstRev = new ArrayList<>();
-        for (String lineRev : text(must(dirRepo, argsRev)).split("\n")) {
+        for (String lineRev : text(must(dirRepo, lstArg.toArray(new String[0]))).split("\n")) {
             if (!lineRev.isBlank()) {
                 lstRev.add(lineRev.trim());
             }

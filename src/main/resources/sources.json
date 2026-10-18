@@ -7,6 +7,8 @@
     "transport git walks commits; transport http banks one body per poll.",
     "branch null means the collector follows whatever the remote declares as its",
     "default. pathPrefix null means the whole tree is tracked.",
+    "With a pathPrefix, only the commits that change something under it are",
+    "observations: any other commit would bank the manifest of the commit before it.",
     "An http endpoint is only usable as evidence if its body is stable when",
     "nothing has happened. Endpoints carrying counters - download counts, view",
     "counts - change on every poll and bank an observation that says nothing.",
@@ -107,6 +109,19 @@
       "claimPolicy": "software-release-exists",
       "pollSeconds": 900,
       "includePreReleases": true,
+      "enabled": true
+    },
+    {
+      "id": "cf-docs-splice-release-notes",
+      "publisher": "Canton Network",
+      "transport": "git",
+      "url": "https://github.com/canton-network/cf-docs.git",
+      "branch": null,
+      "pathPrefix": "docs-main/global-synchronizer/release-notes",
+      "sourceAuthority": "OFFICIAL",
+      "claimPolicy": "software-release-notes",
+      "pollSeconds": 900,
+      "includePreReleases": false,
       "enabled": true
     },
     {

@@ -209,7 +209,8 @@ change recorded there and not a content change inferred from a redirect.
 Two transports.
 
 **git** collects commits. One commit on the first-parent line is one
-observation, and the retrieved representation of that commit is a manifest: the
+observation - with a `pathPrefix`, only a commit that changes something under it -
+and the retrieved representation of that commit is a manifest: the
 sorted list of tracked paths with the content address of each file. The manifest
 is canonical, so an identical tree is identical bytes; each file body is stored
 beside it under its own address, so a normalizer reads the file it wants without
