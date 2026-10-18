@@ -108,6 +108,12 @@ h3 .cnt {
   text-transform: uppercase;
 }
 
+/* display: flex above outranks the hidden attribute, which production sets,
+ * so without this the empty bar and its border stay on the page. */
+.envbar[hidden] {
+  display: none;
+}
+
 /* Deliberately outside any palette a designer would pick. These are not meant
  * to look good; they are meant to be impossible to mistake for production and
  * impossible to mistake for each other. */

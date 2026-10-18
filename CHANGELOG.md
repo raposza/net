@@ -4,6 +4,13 @@
 Releases before 0.2.0 carried no version and no tag; their history is the commit
 log.
 
+## 0.10.1
+
+- The production page no longer shows an empty environment bar. The bar's
+  `display: flex` outranked the `hidden` attribute, so where no bar is due its
+  empty box and bottom border stayed at the top of the page and, being sticky,
+  drew a grey line across the content as it scrolled.
+
 ## 0.10.0
 
 - A new source, `cf-docs-splice-release-notes`: the release notes of Splice and
